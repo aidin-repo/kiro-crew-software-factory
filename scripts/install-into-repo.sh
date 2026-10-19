@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Copies the workflow, dispatcher and tests into a local clone of your repository.
+# It does NOT commit or push: review the files, then open a PR yourself.
+#
+# Usage: scripts/install-into-repo.sh PATH_TO_LOCAL_CLONE
+# Set FORCE=1 to overwrite files that already exist and differ.
+set -euo pipefail
+
+TARGET="${1:-}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ -z "$TARGET" || ! -d "$TARGET/.git" ]]; then
+  echo "Usage: $0 PATH_TO_LOCAL_CLONE (must be a git repository)" >&2
+  exit 2
+fi
+
+copy_file() {
+  local source="$1" destination="$2"
+  mkdir -p "$(dirname "$destination")"
+  if [[ -e "$destination" ]] && ! cmp -s "$source" "$destination"; then
+    if [[ "${FORCE:-0}" != "1" ]]; then
+      echo "SKIP  $destination exists and differs (set FORCE=1 to overwrite)"
+      return
+    fi
+  fi
+  cp "$source" "$destination"
+  echo "COPY  $destination"
+}
+
+copy_file "$HERE/templates/workflows/kiro-crew-events.yml" "$TARGET/.github/workflows/kiro-crew-events.yml"
+copy_file "$HERE/templates/scripts/dispatch_kiro_event.py" "$TARGET/.github/scripts/dispatch_kiro_event.py"
+copy_file "$HERE/templates/scripts/tests/test_dispatch_kiro_event.py" "$TARGET/.github/scripts/tests/test_dispatch_kiro_event.py"
+
+cat <<EOF
+
+Review, test and merge (the workflow only fires from the default branch):
+
+  cd "$TARGET"
+  git checkout -b chore/kiro-crew-issue-to-pr
+  python3 -m pytest .github/scripts/tests -q
+  git add .github/workflows/kiro-crew-events.yml .github/scripts
+  git commit -m "ci: add Kiro Crew issue-to-PR dispatcher"
+  git push -u origin chore/kiro-crew-issue-to-pr
+  gh pr create --fill
+
+Protect the default branch (require a PR) so the agent cannot change these files unreviewed.
+EOF
