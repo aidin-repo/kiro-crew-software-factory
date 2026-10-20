@@ -6,7 +6,7 @@ Everything GitHub needs before an issue label can start work. The scripts in `sc
 
 - A **private** repository you own (a personal repo, or an org repo where you are the owner/admin).
 - `gh` logged in as that owner: `gh auth login`, then `gh auth status`.
-- The workflow's owner check compares the label sender with the repository owner. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is not tested here.
+- The dispatcher's owner check compares both the label sender and the issue author with the repository owner, so you must write the issue yourself as well as label it. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is not tested here.
 - Admin rights on the repo (to create secrets and register a runner).
 
 ## 1.2 Create the label and store the secrets
@@ -44,7 +44,9 @@ This copies three files and prints the commit commands. It does not commit for y
 | `.github/scripts/dispatch_kiro_event.py` | Validates the event, wraps issue text as untrusted data, signs and sends the webhook |
 | `.github/scripts/tests/test_dispatch_kiro_event.py` | Unit tests for the dispatcher |
 
-The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch (Settings, Branches, require a pull request) so the agent can never change these files without review.
+The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 1.5 so the agent cannot change these files without review.
+
+The dispatcher also removes what GitHub does not show you before it reaches the agent: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters in the title and body. What you read in the rendered issue is what the agent gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read.
 
 ## 1.4 Register the self-hosted runner
 
@@ -74,9 +76,21 @@ On macOS that installs a LaunchAgent, which runs while you are logged in. A runn
 
 The runner needs these on its `PATH`: `git`, `python3`, and `gh` logged in as the repo owner (the crewmate uses your `gh` credentials to push the branch and open the PR).
 
+The crewmate pushes over HTTPS with `git`, and the workflow's checkout does not leave credentials behind, so git needs a credential helper. Set it up once as the same user that runs the gateway:
+
+```bash
+gh auth setup-git
+```
+
+`scripts/preflight.sh` warns when no helper is configured.
+
 ## 1.5 Optional hardening
 
-- Require a pull request and one review on the default branch.
+- **Protect the default branch with a ruleset** (Settings, Rules, Rulesets) that requires a pull request **with 0 required approvals** and does not let admins bypass it. Two details matter:
+  - Every PR is opened under your own account, and GitHub does not let an author approve their own PR. "Require 1 approval" would block every merge you make, or push you to bypass it.
+  - Classic branch protection lets admins bypass by default, and the crewmate runs with your admin login. Without "do not allow bypassing", it could push straight to the default branch.
+  
+  A real review requirement becomes possible once the worker uses a separate GitHub account.
 - Add a CODEOWNERS entry for `.github/` so workflow changes need your approval.
 - Restrict the `GITHUB_TOKEN` permissions at the repo level to read-only (the workflow already declares read-only).
 - Use a fine-grained personal access token, scoped to the one repository, for the `gh` login the worker uses.
@@ -101,21 +115,21 @@ jobs:
       group: kiro-crew-pr-review-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.event.repository.default_branch }}
-          path: trusted-main-${{ github.run_id }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           persist-credentials: false
       - name: Dispatch read-only PR review
         env:
           KIRO_MODE: pr-review
-          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN }}
           KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET }}
         run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
   # keep the existing issue-task job below
 ```
 
-The review reads the PR through `gh pr view` and `gh pr diff` and never checks out PR code. It reports to the dashboard as another `Webhook: GitHub <repo>` notification. It also runs on every push to the PR, and it shares the single runner with `issue-task`, so jobs queue behind each other.
+The review reads the PR through `gh pr view` and `gh pr diff` and never checks out PR code. The dispatcher only accepts PRs opened by the repository owner, so a collaborator's PR is refused and that job fails. It reports to the dashboard as another `Webhook: GitHub <repo>` notification. It also runs on every push to the PR, and it shares the single runner with `issue-task`, so jobs queue behind each other. "Read-only" is enforced by the prompt, not by the tool permissions.
 
 `pull_request_target` runs the workflow from the default branch. Adding or removing the review takes effect only after the change is merged, and the PR that makes the change is itself reviewed by the old version.

@@ -52,16 +52,29 @@ You need a **private** GitHub repository you own, the `gh` CLI logged in as the 
 
 - Create the `github-worker` crewmate with the prompt in `templates/agent/github-worker.json`.
 - Create a signed webhook source routed to `github-worker`. Copy the token and signing secret now, because they are shown once.
-- Quit and reopen Kiro Crew, then check that the `KIRO_AGENT` column for `github-worker` says `github-worker`:
+- Check that the `KIRO_AGENT` column for `github-worker` says `github-worker`. If it says `worker`, rebind it as shown in doc 02, section 2.4:
 
 ```bash
 kirocrew agent list
 ```
 
-**2. GitHub side.** Replace `OWNER/REPO` and `~/code/REPO` with your own values:
+- Then quit and reopen Kiro Crew, so the gateway picks up the binding.
+
+**2. GitHub side.** Replace `OWNER/REPO` and `~/code/REPO` with your own values. Clone this repository first if you have not:
 
 ```bash
-cd kiro-crew-issue-to-pr
+git clone https://github.com/aidin-repo/kiro-crew-software-factory
+```
+
+```bash
+cd kiro-crew-software-factory
+```
+
+```bash
+gh auth setup-git
+```
+
+```bash
 export KIROCREW_WEBHOOK_TOKEN='paste-the-token-here'
 export KIROCREW_WEBHOOK_SIGNING_SECRET='paste-the-signing-secret-here'
 scripts/setup-github.sh OWNER/REPO
@@ -69,7 +82,7 @@ scripts/install-into-repo.sh ~/code/REPO
 scripts/install-runner.sh OWNER/REPO
 ```
 
-`install-into-repo.sh` only copies files and prints the commit commands. Merge that change to the default branch before testing, because the workflow only fires from there.
+`gh auth setup-git` lets git push over HTTPS with your `gh` login, which the crewmate needs. `install-into-repo.sh` only copies files and prints the commit commands. Merge that change to the default branch before testing, because the workflow only fires from there.
 
 **3. Start the runner** in its own terminal and leave it open:
 
@@ -97,12 +110,12 @@ Then write a real issue and add the `kiro-task` label. Docs 00 and 03 have sampl
 
 An issue's text can influence a program that has shell access to your machine, so the guardrails matter.
 
-- **Private repositories only.** The setup scripts refuse public repos.
-- **Owner-gated.** Work starts only if the repository owner applied `kiro-task`. That verified approval is why the crewmate treats the issue as the specification.
-- **Issue text is data.** It is base64-encoded into a marked untrusted block. The crewmate never runs commands copied from it and refuses to widen scope or touch workflows, credentials, deployment or infrastructure.
+- **Private repositories only.** The setup scripts refuse any repository that is not private.
+- **Owner-gated.** Work starts only if the repository owner wrote the issue and applied `kiro-task`. That verified approval is why the crewmate treats the issue as the specification.
+- **Issue text is data.** It is base64-encoded into a marked untrusted block, after hidden HTML comments and invisible characters are removed, so the agent reads what you read. The crewmate never runs commands copied from it and refuses to widen scope or touch workflows, credentials, deployment or infrastructure.
 - **Trusted code only.** The job checks out the default branch, never PR code.
-- **Signed and loopback.** The dispatcher sends a bearer token plus an HMAC signature, and refuses any non-loopback webhook URL.
-- **No merge, no deploy.** The crewmate pushes only `kiro/issue-N` and opens a PR. Add branch protection so a review is required.
+- **Signed and loopback.** The dispatcher sends a bearer token plus an HMAC signature, refuses any non-loopback webhook URL, ignores proxy settings and never follows a redirect.
+- **No merge, no deploy.** The crewmate pushes only `kiro/issue-N` and opens a PR. To enforce that, protect the default branch with a ruleset that requires a pull request and does not let admins bypass it (docs/01, section 1.5). Requiring an approval would block your own merges, because GitHub does not let you approve your own PR.
 - **It runs shell commands as you.** Commits and PRs appear under your GitHub account, so treat the label like typing the command yourself.
 
 The owner check, loopback rule and signature are enforced in code. Rules such as "do not touch workflows" live in the crewmate's prompt, which is a weaker layer.

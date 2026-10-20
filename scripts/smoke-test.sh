@@ -32,7 +32,21 @@ BODY="Task:
 
 ISSUE_URL="$(gh issue create --repo "$REPO" --title "Smoke test $STAMP: add $FILE" --body "$BODY")"
 NUMBER="${ISSUE_URL##*/}"
+PR_URL=""
 echo "Created issue #$NUMBER: $ISSUE_URL"
+
+# Runs on every exit, including a failure under `set -e`, so a failed step cannot
+# leave a stray issue behind when CLEANUP=1.
+cleanup() {
+  if [[ "${CLEANUP:-0}" == "1" ]]; then
+    [[ -n "$PR_URL" ]] && gh pr close "$PR_URL" --delete-branch --comment "Closing smoke-test PR (not merged)." >/dev/null || true
+    gh issue close "$NUMBER" --repo "$REPO" --reason "not planned" >/dev/null || true
+    echo "Cleaned up (PR closed, branch deleted, issue closed)."
+  else
+    echo "Not cleaned up. Close the PR WITHOUT merging, and issue #$NUMBER, when you are done."
+  fi
+}
+trap cleanup EXIT
 
 # Label AFTER creating the issue, so the event fires at a moment you control.
 gh issue edit "$NUMBER" --repo "$REPO" --add-label kiro-task >/dev/null
@@ -40,9 +54,9 @@ echo "Applied label kiro-task. Waiting up to ${TIMEOUT_SECS}s for branch kiro/is
 echo "(the self-hosted runner must be running: cd <runner dir> && ./run.sh)"
 
 DEADLINE=$(( $(date +%s) + TIMEOUT_SECS ))
-PR_URL=""
 while [[ "$(date +%s)" -lt "$DEADLINE" ]]; do
-  PR_URL="$(gh pr list --repo "$REPO" --head "kiro/issue-$NUMBER" --state all --json url --jq '.[0].url // empty')"
+  # A transient gh failure must not abort the wait.
+  PR_URL="$(gh pr list --repo "$REPO" --head "kiro/issue-$NUMBER" --state all --json url --jq '.[0].url // empty' || true)"
   [[ -n "$PR_URL" ]] && break
   sleep 15
   printf '.'
@@ -64,11 +78,4 @@ else
   fi
 fi
 
-if [[ "${CLEANUP:-0}" == "1" ]]; then
-  [[ -n "$PR_URL" ]] && gh pr close "$PR_URL" --delete-branch --comment "Closing smoke-test PR (not merged)." >/dev/null || true
-  gh issue close "$NUMBER" --repo "$REPO" --reason "not planned" >/dev/null || true
-  echo "Cleaned up (PR closed, branch deleted, issue closed)."
-else
-  echo "Not cleaned up. Close the PR WITHOUT merging, and the issue, when you are done."
-fi
 exit "$RESULT"

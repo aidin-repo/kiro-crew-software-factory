@@ -11,7 +11,7 @@ In Settings, Developer, Feature Previews, switch on **Crewmates** and **Webhooks
 ## 2.2 Create the github-worker crewmate
 
 1. Open the crewmates page and add a new crewmate named `github-worker`. Build it from a coding template such as `worker`.
-2. Open its instructions and replace the prompt with the `prompt` value from `templates/agent/github-worker.json`. Editing it gives the crewmate its own private template copy: the Built from pane then shows the base template marked Custom, used by this crewmate only.
+2. Open its instructions and replace the prompt with the `prompt` value from `templates/agent/github-worker.json`. Editing it gives the crewmate its own private template copy: the Built from pane then shows the base template marked Customized, used by this crewmate only.
 3. Open the **Built from** pane and check the tools match the template: `tools` glob, grep, read, shell, tool_search and write, and auto-approved (`allowedTools`) shell and tool_search. The pane shows **Customized** once you have edited the prompt, which means the crewmate has its own private copy of the `worker` template.
 
    ![The Built from pane of the github-worker crewmate: built from worker, marked Customized, with tools glob, grep, read, shell, tool_search and write, and shell and tool_search auto-approved](images/crewmate-built-from.png)
@@ -103,7 +103,9 @@ If your crewmate reports denials for reads, writes or searches:
 
 - Delivery is fire-and-forget: HTTP 200 means *accepted*, not *succeeded*. Watch the notifications or the Activity list.
 - Limits: 6 concurrent runs and a 256 KiB body. The dispatcher asks for a 1800 s timeout; the gateway default is 599 s and the maximum is 3593 s.
-- The same `sessionKey` cannot run twice at once (`409 session_busy`). The key includes the GitHub run id and attempt, so re-running a job gets a new key.
+- The same `sessionKey` cannot run twice at once (`409 session_busy`). The key includes the GitHub run id and attempt, so re-running a job gets a new key. The workflow's checkout path includes the attempt too, so a re-run never cleans the folder an earlier run's agent is still using.
+- The workflow's `concurrency` group only covers the dispatch job, which ends within seconds. It does not stop two agents from working on the same issue if you label it twice quickly. The second one stops at the existing branch, but the work is wasted.
+- Each run leaves a `trusted-main-...` checkout in the runner's `_work` folder. They are small, but delete old ones now and then.
 - To stop all inbound work without deleting anything, use the kill switch on the Webhooks page.
 - Keep the gateway bound to loopback. Do not expose port 5476 to the network.
 
@@ -125,3 +127,5 @@ curl -sS -X POST http://127.0.0.1:5476/api/hooks/agent \
 ```
 
 Expected: `{"status": "accepted", "sessionKey": "hook:manual-test:1"}`, then a notification with the reply. Use `printf`, not `echo`: a trailing newline changes the MAC.
+
+The token and the signing secret are on the command line here, so other users on the same machine can see them in the process list for the moment the command runs. That is one more reason to use a throwaway source.

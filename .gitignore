@@ -9,6 +9,7 @@
 # Python caches from running the tests
 __pycache__/
 .pytest_cache/
+.venv/
 
 # OS files
 .DS_Store

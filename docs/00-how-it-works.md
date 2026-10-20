@@ -49,7 +49,7 @@ flowchart TB
 In words:
 1. Adding the label sends an event from GitHub to a small workflow in your repo.
 2. The workflow runs on your machine, using a GitHub Actions runner you installed. It checks out the repo's main branch, never code from a PR.
-3. A short script checks the event. It confirms the right repository and label and that the owner applied the label. It then passes the issue text to Kiro Crew as data, not as commands, in a signed request to your local Kiro Crew.
+3. A short script checks the event. It confirms the right repository and label and that the owner both wrote the issue and applied the label. It removes hidden text (HTML comments, invisible characters), then passes the issue text to Kiro Crew as data, not as commands, in a signed request to your local Kiro Crew.
 4. Kiro Crew's webhook source routes the request to the `github-worker` crewmate. It starts a fresh session for that one task, does the work with the crewmate's instructions, and closes the session when it is done.
 
 Everything runs on your machine with your GitHub login, so the PR and commits show your account, not the crewmate's name.

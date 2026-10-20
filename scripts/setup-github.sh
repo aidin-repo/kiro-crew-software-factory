@@ -22,8 +22,8 @@ command -v gh >/dev/null 2>&1 || { echo "gh CLI is required" >&2; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "Run 'gh auth login' first" >&2; exit 1; }
 
 VISIBILITY="$(gh repo view "$REPO" --json visibility --jq .visibility)"
-if [[ "$VISIBILITY" == "PUBLIC" ]]; then
-  echo "Refusing: $REPO is PUBLIC. A self-hosted runner on your own machine must only serve private repositories." >&2
+if [[ "$VISIBILITY" != "PRIVATE" ]]; then
+  echo "Refusing: $REPO is $VISIBILITY. A self-hosted runner on your own machine must only serve private repositories." >&2
   exit 1
 fi
 

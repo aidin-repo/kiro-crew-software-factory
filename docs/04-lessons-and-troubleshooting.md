@@ -9,6 +9,7 @@ Everything here happened while building the working setup, so each item is a rea
 | `issue-task` job stays **queued** | The runner is offline or stopped | Start it: `cd <runner dir> && ./run.sh`. `gh api repos/OWNER/REPO/actions/runners` shows `status` |
 | *All* jobs queued, including GitHub-hosted ones | A GitHub Actions incident | Check githubstatus.com. Jobs run by themselves when it recovers |
 | Job fails: "label must be applied by the repository owner" | A non-owner applied the label, or the repo belongs to an org | Have the owner apply it. For org repos, see doc 01, section 1.1 |
+| Job fails: "The issue must be written by the repository owner" | Someone else opened the issue, even though you applied the label | Copy the text into a new issue that you write, and label that one |
 | Job fails: "KIRO_WORKSPACE is not a trusted default-branch checkout" | The checkout path does not start with `trusted-main-` | Do not rename that path in the workflow |
 | `Kiro Crew webhook rejected: HTTP 401` | Wrong token or signing secret, or clock skew over 5 minutes | Re-create the source, re-run `setup-github.sh`, check the system clock |
 | `HTTP 403` | Origin or host check rejected the request | The dispatcher sends `Origin` itself; confirm the URL is the loopback gateway |
@@ -24,7 +25,7 @@ Everything here happened while building the working setup, so each item is a rea
 | Local `localStorage` tests fail, CI passes | Node 26's built-in Web Storage shadows jsdom's | Not your change; the crewmate reran with `NODE_OPTIONS=--no-experimental-webstorage` |
 | Branch pushed with no commit | git add and commit ran in parallel | The template prompt now requires git steps one at a time |
 | Worker says it cannot act on "untrusted" issue text | Dispatcher lacked the owner-approval wording | Use the dispatcher in this folder (it includes the owner-approved prompt) |
-| Worker stops: branch `kiro/issue-N` exists | Re-run on an issue that already has the branch | Doc 03, section 3.6 |
+| Worker stops: branch `kiro/issue-N` exists | Re-run on an issue that already has the branch | Doc 03, section 3.7 |
 | `gh issue edit <number> ...` gives "no such file or directory" in zsh | You pasted a placeholder in angle brackets | Replace it with the real number and remove the brackets |
 | `cd ~/runner   # comment` gives "too many arguments" in zsh | An inline `#` comment is not a comment in an interactive zsh | Run commands without trailing comments |
 | `./run.sh: no such file` | You are in the wrong folder, or the runner was never configured | The configured folder has a `.runner` file |
@@ -40,6 +41,7 @@ Everything here happened while building the working setup, so each item is a rea
 7. **The crewmate recovers from small problems by itself.** In one run, the tests failed because of the local Node version, and a parallel git add and commit pushed an empty branch. It diagnosed both, worked around the first, redid the second, and reported what it did. You see this only in the final notification, so read it.
 8. **A crewmate gives you its prompt, not its memory.** Webhook runs left the crewmate's private memory and dashboard empty. Treat each run as starting from scratch, and put anything it must always know in its prompt.
 9. **Turn off what you don't use.** The automatic PR review ran on every PR and push and shared the one runner with implementation jobs. It was removed from the default workflow; doc 01, section 1.6 shows how to add it back.
+10. **Have the code reviewed, then test the fixes.** A review by a second crewmate found gaps the first tests did not: Python's `urllib` honours proxy settings and copies the `Authorization` header across redirects, GitHub does not render HTML comments, and a label approves the raw issue body. Each is now fixed in the dispatcher and covered by a test that fails on the old behaviour.
 
 ## Reading the evidence yourself
 

@@ -27,13 +27,20 @@ else
   fail "gh is not authenticated (run: gh auth login)"
 fi
 
+# The crewmate pushes over HTTPS using git, which needs a credential helper.
+if git config --get-urlmatch credential.helper https://github.com 2>/dev/null | grep -q .; then
+  pass "git has a credential helper for github.com"
+else
+  warn "git has no credential helper for github.com, so the crewmate cannot push (run: gh auth setup-git)"
+fi
+
 if gh repo view "$REPO" >/dev/null 2>&1; then
   pass "repository $REPO is reachable"
   VISIBILITY="$(gh repo view "$REPO" --json visibility --jq .visibility 2>/dev/null)"
-  if [[ "$VISIBILITY" == "PUBLIC" ]]; then
-    fail "repository is PUBLIC: do not run a laptop self-hosted runner on a public repo"
+  if [[ "$VISIBILITY" == "PRIVATE" ]]; then
+    pass "repository visibility is PRIVATE"
   else
-    pass "repository visibility is ${VISIBILITY:-unknown} (not public)"
+    fail "repository is ${VISIBILITY:-unknown}, not PRIVATE: do not run a laptop self-hosted runner on it"
   fi
 else
   fail "cannot read $REPO with the current gh login"

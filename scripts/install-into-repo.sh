@@ -9,7 +9,7 @@ set -euo pipefail
 TARGET="${1:-}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if [[ -z "$TARGET" || ! -d "$TARGET/.git" ]]; then
+if [[ -z "$TARGET" ]] || ! git -C "$TARGET" rev-parse --git-dir >/dev/null 2>&1; then
   echo "Usage: $0 PATH_TO_LOCAL_CLONE (must be a git repository)" >&2
   exit 2
 fi
@@ -43,5 +43,6 @@ Review, test and merge (the workflow only fires from the default branch):
   git push -u origin chore/kiro-crew-issue-to-pr
   gh pr create --fill
 
-Protect the default branch (require a PR) so the agent cannot change these files unreviewed.
+Protect the default branch so the agent cannot change these files unreviewed. Use a
+ruleset that requires a pull request and does NOT let admins bypass it (docs/01, section 1.5).
 EOF
