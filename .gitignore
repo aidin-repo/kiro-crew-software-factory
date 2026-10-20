@@ -1,0 +1,15 @@
+# Local tool and IDE files
+.env.omni
+.omni/
+.kiro/
+.claude/
+.cursor/
+.agents/
+
+# Python caches from running the tests
+__pycache__/
+.pytest_cache/
+.venv/
+
+# OS files
+.DS_Store

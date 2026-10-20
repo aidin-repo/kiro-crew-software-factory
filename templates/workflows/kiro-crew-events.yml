@@ -1,0 +1,46 @@
+# Installed to .github/workflows/kiro-crew-events.yml in the target repository.
+#
+# issues:labeled (kiro-task) -> issue-task : the github-worker crewmate implements the issue and opens a PR
+#
+# The job runs on YOUR machine (self-hosted runner labelled "kirocrew") and talks to
+# the Kiro Crew gateway on 127.0.0.1. Use this only in PRIVATE repositories you control.
+# An optional read-only PR review job is described in docs/01-github-activation.md, section 1.6.
+name: Kiro Crew task dispatcher
+
+on:
+  issues:
+    types: [labeled]
+
+# The job only needs to check out the repository. No token reaches the dispatcher script.
+permissions:
+  contents: read
+
+jobs:
+  issue-task:
+    # The dispatcher additionally verifies that the repository owner wrote the issue
+    # and applied the label.
+    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'kiro-task'
+    runs-on: [self-hosted, kirocrew]
+    # This job ends as soon as Kiro Crew accepts the webhook. The agent keeps working
+    # afterwards, so the group below only serialises the short dispatch step.
+    timeout-minutes: 5
+    concurrency:
+      group: kiro-crew-issue-task-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      # Always check out the DEFAULT branch: the dispatcher script and the workspace
+      # handed to the crewmate must be trusted code. The path includes the run attempt
+      # so that "Re-run job" never cleans a directory a live agent is still using.
+      # Pinned to a commit SHA (actions/checkout v4.4.0) because this runs on your machine.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Dispatch maintainer-approved issue task
+        env:
+          KIRO_MODE: issue-task
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
