@@ -36,46 +36,35 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
 
   It copies `templates/agent/*` into `~/.kiro/agents/` and prints the six commands for the next step. Expected last lines: six `Installed ~/.kiro/agents/...` and the `kirocrew agent create` block.
 
-## 3. Kiro Crew: create the six mates
+## 3. Kiro Crew: check the templates are visible (mates are optional)
 
-- [ ] Paste the six commands the previous step printed:
+- [ ] Open the mate picker at the top of any chat, or the **Mates** page. The six templates you installed appear in the roster.
 
-  ```bash
-  kirocrew agent create --name planner     --kiro-agent delivery-planner     --display-name "Delivery Planner"
-  kirocrew agent create --name implementer --kiro-agent delivery-implementer --display-name "Delivery Implementer"
-  kirocrew agent create --name reviewer    --kiro-agent delivery-reviewer    --display-name "Delivery Reviewer"
-  kirocrew agent create --name scribe      --kiro-agent delivery-scribe      --display-name "Delivery Scribe"
-  kirocrew agent create --name auditor     --kiro-agent delivery-auditor     --display-name "Delivery Auditor"
-  kirocrew agent create --name worker      --kiro-agent github-worker        --display-name "GitHub Worker"
-  ```
+  ![The mate picker at the top of a chat, each entry with its template name underneath](images/03-mates-picker.png)
 
-- [ ] Check:
+- [ ] **Optional.** Webhook runs execute directly on the templates (the Webhooks Agent picker lists templates only), so the pipeline needs no mates. Create one only if you want a standing chat with a role, for example to ask the auditor what is stuck:
 
   ```bash
-  kirocrew agent list
+  kirocrew agent create --name auditor --kiro-agent delivery-auditor --display-name "Delivery Auditor"
   ```
 
-  Each of the six rows shows its template in the `KIRO_AGENT` column and its own memory store. If `agent create` says "a template is already named X", you used the template's name as the mate's name; pick a different one.
-
-- [ ] Open the **Mates** page in the dashboard, or the mate picker at the top of a chat. The six appear in the roster, each showing its template name underneath (**Show the full roster** if the picker is cut off).
-
-  ![The mate picker at the top of a chat, each mate with its template name underneath](images/03-mates-picker.png)
+  A mate's name must differ from its template's name, or `agent create` says "a template is already named X".
 
 ## 4. Kiro Crew: one webhook source per mate
 
 Repeat for each row. Have a terminal open beside the dashboard: each source shows its two values once, and you store them straight into GitHub.
 
-| # | Source name | Agent (pick the **mate**) | Then run (paste token, Enter; paste signing secret, Enter) |
+| # | Source name | Agent | Then run (paste token, Enter; paste signing secret, Enter) |
 |---|---|---|---|
-| 4a | `GitHub REPO planner` | `planner` | `gh secret set KIROCREW_WEBHOOK_TOKEN --repo OWNER/REPO` then `gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET --repo OWNER/REPO` |
-| 4b | `GitHub REPO implementer` | `implementer` | `..._TOKEN_IMPLEMENTER`, `..._SIGNING_SECRET_IMPLEMENTER` |
-| 4c | `GitHub REPO reviewer` | `reviewer` | `..._TOKEN_REVIEWER`, `..._SIGNING_SECRET_REVIEWER` |
-| 4d | `GitHub REPO scribe` | `scribe` | `..._TOKEN_SCRIBE`, `..._SIGNING_SECRET_SCRIBE` |
-| 4e | `GitHub REPO worker` | `worker` | `..._TOKEN_WORKER`, `..._SIGNING_SECRET_WORKER` |
+| 4a | `GitHub REPO planner` | `delivery-planner` | `gh secret set KIROCREW_WEBHOOK_TOKEN --repo OWNER/REPO` then `gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET --repo OWNER/REPO` |
+| 4b | `GitHub REPO implementer` | `delivery-implementer` | `..._TOKEN_IMPLEMENTER`, `..._SIGNING_SECRET_IMPLEMENTER` |
+| 4c | `GitHub REPO reviewer` | `delivery-reviewer` | `..._TOKEN_REVIEWER`, `..._SIGNING_SECRET_REVIEWER` |
+| 4d | `GitHub REPO scribe` | `delivery-scribe` | `..._TOKEN_SCRIBE`, `..._SIGNING_SECRET_SCRIBE` |
+| 4e | `GitHub REPO worker` | `github-worker` | `..._TOKEN_WORKER`, `..._SIGNING_SECRET_WORKER` |
 
 For each:
 
-- [ ] **Settings** → **Webhooks** → **New**. Type the **Source** name. In the **Agent** dropdown pick the **mate** (`implementer`, not the `delivery-implementer` template; the dropdown lists both). Leave **Require request signing** checked. Click **Generate token**.
+- [ ] **Settings** → **Webhooks** → **New**. Type the **Source** name. In the **Agent** dropdown type part of the name and pick the template from the table (the dropdown lists installed templates, tagged `builtin`). Leave **Require request signing** checked. Click **Generate token**.
 
   ![The New source form: source name, agent dropdown, require request signing, generate token](images/04a-new-source.png)
 
@@ -83,7 +72,7 @@ For each:
 
   ![The one-time panel showing the bearer token and signing secret](images/04b-source-created.png)
 
-- [ ] Check the new row in the left list reads `Agent: <mate name>` (for example `Agent: implementer`). If it reads the template name (`Agent: delivery-implementer`), the source will run on the shared template with the default memory instead of the mate: select the row, **Routing** → **Agent**, pick the mate. The token does not change.
+- [ ] Check the new row in the left list reads `Agent: <template>` (for example `Agent: delivery-implementer`). **Routing** → **Agent** changes it later without changing the token.
 
 - [ ] After all five:
 
@@ -175,6 +164,6 @@ To keep it running after you close the terminal: `./svc.sh install && ./svc.sh s
 | `kiro-approved` but no PR after 10 min | Actions: `issue-implement` result. Dashboard notification: the implementer's report |
 | PR stuck at `kiro-review` after 10 min | Dashboard notification from the reviewer; re-add the label to retry |
 | PR has `kiro-parked` | The gate comment lists each failed check |
-| A mate ignores a prompt change you made | Its source routes to the template (`Agent: delivery-...`), not the mate; re-point it, or edit the template file directly |
+| A prompt change you made is not picked up | Edit the file in `~/.kiro/agents/`; the next webhook run reads it. No restart or mate step is needed |
 
 Full troubleshooting: [doc 04](04-lessons-and-troubleshooting.md). How each piece works: [doc 06](06-delivery-lifecycle.md).
