@@ -1,52 +1,87 @@
 # 1. GitHub activation
 
-Everything GitHub needs before an issue label can start work. The scripts in `scripts/` do each step, and the manual equivalent is shown so you can see what they change.
+Everything GitHub needs before a label can start work. The scripts in `scripts/` do each step, and the manual equivalent is shown so you can see what they change.
 
 ## 1.1 Prerequisites
 
 - A **private** repository you own (a personal repo, or an org repo where you are the owner/admin).
 - `gh` logged in as that owner: `gh auth login`, then `gh auth status`.
-- The dispatcher's owner check compares both the label sender and the issue author with the repository owner, so you must write the issue yourself as well as label it. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is not tested here.
+- The dispatcher's owner check compares both the label sender and the issue author with the repository owner, so you must write the issue yourself as well as label it. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` and `labelled_pr_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is not tested here.
 - Admin rights on the repo (to create secrets and register a runner).
+- The mates and webhook sources from [doc 02](02-kiro-crew-setup.md), because this step stores their tokens.
 
-## 1.2 Create the label and store the secrets
+## 1.2 Create the labels and store the secrets
 
-Use the token and signing secret from `docs/02-kiro-crew-setup.md`, section 2.3:
+One webhook source per mate means one token and signing secret pair per mate. Have the five pairs from doc 02 ready (you can skip the scribe and worker pairs if you do not want those hops).
 
 ```bash
-export KIROCREW_WEBHOOK_TOKEN='paste-the-token-here'
-export KIROCREW_WEBHOOK_SIGNING_SECRET='paste-the-signing-secret-here'
+export KIROCREW_WEBHOOK_TOKEN='planner token'
+export KIROCREW_WEBHOOK_SIGNING_SECRET='planner signing secret'
+export KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER='...'
+export KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER='...'
+export KIROCREW_WEBHOOK_TOKEN_REVIEWER='...'
+export KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER='...'
+export KIROCREW_WEBHOOK_TOKEN_SCRIBE='...'
+export KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE='...'
+export KIROCREW_WEBHOOK_TOKEN_WORKER='...'
+export KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER='...'
 scripts/setup-github.sh OWNER/REPO
 ```
+
+Any variable you leave unset is prompted for with hidden input; press Enter to skip a pair. The script creates all ten labels and stores each secret with `gh secret set`, never printing or writing a value.
 
 Manual equivalent:
 
 ```bash
-gh label create kiro-task --repo OWNER/REPO --color 5319e7 \
-  --description "Owner-approved: Kiro Crew implements this issue and opens a PR" --force
+for l in kiro-plan kiro-deliver kiro-approved kiro-needs-owner kiro-task kiro-review kiro-changes-requested kiro-ready kiro-ready-to-merge kiro-parked; do
+  gh label create "$l" --repo OWNER/REPO --force
+done
 gh secret set KIROCREW_WEBHOOK_TOKEN --repo OWNER/REPO
 gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_TOKEN_REVIEWER --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_TOKEN_SCRIBE --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_TOKEN_WORKER --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER --repo OWNER/REPO
 ```
 
-Rules for the secrets: never put them in a file in the repo, never echo them, rotate by minting a new webhook source (see doc 02) and re-running `setup-github.sh`.
+Which job uses which secret:
 
-## 1.3 Add the workflow and dispatcher to the repo
+| Job | Label | Secret pair | Runs as |
+|---|---|---|---|
+| `issue-plan`, `issue-deliver` | `kiro-plan`, `kiro-deliver` | `KIROCREW_WEBHOOK_TOKEN` | planner |
+| `issue-implement`, `pr-changes` | `kiro-approved`, `kiro-changes-requested` | `..._IMPLEMENTER` | implementer |
+| `pr-review-round` | `kiro-review` | `..._REVIEWER` | reviewer |
+| `pr-merged` | merged `kiro/issue-N` PR | `..._SCRIBE` | scribe |
+| `issue-task` | `kiro-task` | `..._WORKER` | github-worker |
+| `pr-gate` | `kiro-ready` | none: uses `github.token` | the gate script |
+
+A source's destination is fixed on the Kiro Crew Webhooks page, so a job that borrows another mate's token runs *as that mate* and inherits its rules. That is why each mate has its own pair: the scribe on the planner's token refused to open a docs PR because the planner may not push.
+
+Rules for the secrets: never put them in a file in the repo, never echo them, rotate by minting a new webhook source (doc 02) and re-running `setup-github.sh`.
+
+## 1.3 Add the workflow, dispatcher, gate and mate templates to the repo
 
 ```bash
 scripts/install-into-repo.sh ~/code/REPO
 ```
 
-This copies three files and prints the commit commands. It does not commit for you.
+This copies the files below and prints the commit commands. It does not commit for you.
 
 | File | Role |
 |---|---|
-| `.github/workflows/kiro-crew-events.yml` | Triggers on `issues:labeled` only; runs the `issue-task` job on the `kirocrew` runner |
-| `.github/scripts/dispatch_kiro_event.py` | Validates the event, wraps issue text as untrusted data, signs and sends the webhook |
-| `.github/scripts/tests/test_dispatch_kiro_event.py` | Unit tests for the dispatcher |
+| `.github/workflows/kiro-crew-events.yml` | One job per lifecycle label, all on the `kirocrew` runner; triggers on `issues: labeled` and `pull_request_target: labeled, closed` |
+| `.github/scripts/dispatch_kiro_event.py` | Validates the event, wraps GitHub text as untrusted data, signs and sends the webhook |
+| `.github/scripts/kiro_gate.py` | The deterministic merge gate, run by the `pr-gate` job with a write token |
+| `.github/scripts/tests/test_dispatch_kiro_event.py`, `test_kiro_gate.py` | Unit tests (134) |
+| `.github/kiro-agents/*.json`, `*.md` | The mate prompts, versioned with the code they act on |
 
-The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 1.5 so the agent cannot change these files without review.
+The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 1.5 so a mate cannot change these files without review.
 
-The dispatcher also removes what GitHub does not show you before it reaches the agent: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters in the title and body. What you read in the rendered issue is what the agent gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read.
+The dispatcher removes what GitHub does not show you before it reaches a mate: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters. What you read in the rendered issue is what the mate gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read. The implementer reads the spec from the planner's comment, not the issue body, and verifies that the comment's author is you.
 
 ## 1.4 Register the self-hosted runner
 
@@ -74,9 +109,9 @@ cd ~/actions-runner-kirocrew && ./svc.sh install && ./svc.sh start
 
 On macOS that installs a LaunchAgent, which runs while you are logged in. A runner that is offline is not an error: the job just waits in the queue until it comes back.
 
-The runner needs these on its `PATH`: `git`, `python3`, and `gh` logged in as the repo owner (the crewmate uses your `gh` credentials to push the branch and open the PR).
+The runner needs these on its `PATH`: `git`, `python3`, `node` (the version your CI uses, via nvm if you like), and `gh` logged in as the repo owner. The mates use your `gh` credentials to comment, label, push branches, review and open PRs.
 
-The crewmate pushes over HTTPS with `git`, and the workflow's checkout does not leave credentials behind, so git needs a credential helper. Set it up once as the same user that runs the gateway:
+The implementer pushes over HTTPS with `git`, and the workflow's checkout does not leave credentials behind, so git needs a credential helper. Set it up once as the same user that runs the gateway:
 
 ```bash
 gh auth setup-git
@@ -84,32 +119,34 @@ gh auth setup-git
 
 `scripts/preflight.sh` warns when no helper is configured.
 
+Each run leaves a `trusted-main-<run>-<attempt>` checkout in the runner's `_work` folder, and a mate that stopped early may leave a `kiro-worktree-N` or `kiro-review-N` worktree beside it. They are small; delete old ones now and then.
+
 ## 1.5 Optional hardening
 
 - **Protect the default branch with a ruleset** (Settings, Rules, Rulesets) that requires a pull request **with 0 required approvals** and does not let admins bypass it. Two details matter:
-  - Every PR is opened under your own account, and GitHub does not let an author approve their own PR. "Require 1 approval" would block every merge you make, or push you to bypass it.
-  - Classic branch protection lets admins bypass by default, and the crewmate runs with your admin login. Without "do not allow bypassing", it could push straight to the default branch.
-  
-  A real review requirement becomes possible once the worker uses a separate GitHub account.
-- Add a CODEOWNERS entry for `.github/` so workflow changes need your approval.
-- Restrict the `GITHUB_TOKEN` permissions at the repo level to read-only (the workflow already declares read-only).
-- Use a fine-grained personal access token, scoped to the one repository, for the `gh` login the worker uses.
+  - Every PR and every review is created under your own account, and GitHub does not let an author approve their own PR. That is why the reviewer posts a *comment* review with a `VERDICT:` line and the gate reads that line. "Require 1 approval" would block every merge you make, or push you to bypass it.
+  - Classic branch protection lets admins bypass by default, and the mates run with your admin login. Without "do not allow bypassing", a mate could push straight to the default branch.
 
-## 1.6 Optional: automatic read-only PR review
+  A real review requirement becomes possible once the mates use a separate GitHub account.
+- Add a CODEOWNERS entry for `.github/` so workflow, dispatcher, gate and prompt changes need your approval. The gate also refuses any PR that touches `.github/`, `infrastructure/` or `.env` files, whatever the spec says.
+- Restrict the `GITHUB_TOKEN` permissions at the repo level to read-only. The workflow declares read-only everywhere except the `pr-gate` job, which asks for `pull-requests: write` and `issues: write` to post its comment and label.
+- Use a fine-grained personal access token, scoped to the one repository, for the `gh` login the mates use.
 
-The template ships without it. The dispatcher still supports a `pr-review` mode, so turning it on is a workflow-only change. Add this trigger and job to `.github/workflows/kiro-crew-events.yml`, then merge it to the default branch:
+## 1.6 Optional: read-only summary on every PR push
+
+The template ships without it, because the reviewer already reviews each delivery PR when it is labelled `kiro-review`. The dispatcher still supports a `pr-review` mode that summarises any PR the owner pushes to, on every push. Add this trigger type and job to `.github/workflows/kiro-crew-events.yml`, then merge it to the default branch:
 
 ```yaml
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
-  issues:
-    types: [labeled]
+    types: [labeled, closed, opened, reopened, synchronize, ready_for_review]
 
 jobs:
   pr-review:
-    # Same-repo PRs only: never dispatch work for code that came from a fork.
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event_name == 'pull_request_target'
+      && contains(fromJSON('["opened","reopened","synchronize","ready_for_review"]'), github.event.action)
+      && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, kirocrew]
     concurrency:
       group: kiro-crew-pr-review-${{ github.event.pull_request.number }}
@@ -120,16 +157,15 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           persist-credentials: false
-      - name: Dispatch read-only PR review
+      - name: Dispatch read-only PR summary
         env:
           KIRO_MODE: pr-review
           KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
-          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN }}
-          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN_REVIEWER }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER }}
         run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
-  # keep the existing issue-task job below
 ```
 
-The review reads the PR through `gh pr view` and `gh pr diff` and never checks out PR code. The dispatcher only accepts PRs opened by the repository owner, so a collaborator's PR is refused and that job fails. It reports to the dashboard as another `Webhook: GitHub <repo>` notification. It also runs on every push to the PR, and it shares the single runner with `issue-task`, so jobs queue behind each other. "Read-only" is enforced by the prompt, not by the tool permissions.
+It reads the PR through `gh pr view` and `gh pr diff`, never checks out PR code, and refuses PRs opened by anyone but the owner. It runs on every push and shares the single runner with the lifecycle jobs, so jobs queue behind each other.
 
-`pull_request_target` runs the workflow from the default branch. Adding or removing the review takes effect only after the change is merged, and the PR that makes the change is itself reviewed by the old version.
+`pull_request_target` runs the workflow from the default branch. Adding or removing a job takes effect only after the change is merged, and the PR that makes the change is itself handled by the old version.
