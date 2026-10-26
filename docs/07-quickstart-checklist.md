@@ -133,9 +133,9 @@ Alternative for the secrets: export all ten as environment variables and let `sc
   ./run.sh
   ```
 
-- [ ] Repository **Settings** → **Actions** → **Runners** shows it **Idle** with labels `self-hosted`, `kirocrew`.
+- [ ] Repository **Actions** → **Runners** (left sidebar) → **Self-hosted runners** shows it with labels `self-hosted`, `kirocrew`, and the OS and architecture of your machine.
 
-  > Screenshot needed: `docs/images/06-runner-idle.png`
+  ![The repository's self-hosted runners list showing a macOS arm64 runner with the kirocrew label](images/06-runner-idle.png)
 
 To keep it running after you close the terminal: `./svc.sh install && ./svc.sh start` in the runner folder.
 
