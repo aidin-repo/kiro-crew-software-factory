@@ -1,31 +1,49 @@
 # Installed to .github/workflows/kiro-crew-events.yml in the target repository.
 #
-# issues:labeled (kiro-task) -> issue-task : the github-worker crewmate implements the issue and opens a PR
+# The delivery lifecycle is a label state machine on GitHub. Every hop is an event, no
+# mate polls, and one mate does one job. Each mate is its own Kiro Crew webhook source
+# (its own token + signing secret) so the gateway maps it to its own agent and memory.
 #
-# The job runs on YOUR machine (self-hosted runner labelled "kirocrew") and talks to
-# the Kiro Crew gateway on 127.0.0.1. Use this only in PRIVATE repositories you control.
-# An optional read-only PR review job is described in docs/01-github-activation.md, section 1.6.
-name: Kiro Crew task dispatcher
+#   issues:labeled  kiro-plan                -> issue-plan      : delivery-planner posts an AIDLC spec (read-only)
+#   issues:labeled  kiro-deliver             -> issue-deliver   : delivery-planner posts the spec, applies kiro-approved
+#   issues:labeled  kiro-approved            -> issue-implement : delivery-implementer builds, opens PR, labels kiro-review
+#   issues:labeled  kiro-task                -> issue-task      : github-worker implements directly (fast lane, no spec)
+#   PR:labeled      kiro-review              -> pr-review-round : delivery-reviewer reviews, labels kiro-ready / kiro-changes-requested
+#   PR:labeled      kiro-changes-requested   -> pr-changes      : delivery-implementer fixes, relabels kiro-review (max 3 rounds)
+#   PR:labeled      kiro-ready               -> pr-gate         : kiro_gate.py (no agent) labels kiro-ready-to-merge / kiro-parked
+#   PR closed+merged, head kiro/issue-N      -> pr-merged       : delivery-scribe refreshes docs
+#
+# Every job runs on YOUR machine (self-hosted runner labelled "kirocrew") and talks to the
+# Kiro Crew gateway on 127.0.0.1. Use this only in PRIVATE repositories you own.
+#
+# Secrets (one source per mate on the Kiro Crew Webhooks page):
+#   KIROCREW_WEBHOOK_TOKEN / KIROCREW_WEBHOOK_SIGNING_SECRET                     -> delivery-planner
+#   KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER / KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER -> delivery-implementer
+#   KIROCREW_WEBHOOK_TOKEN_REVIEWER / KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER       -> delivery-reviewer
+#   KIROCREW_WEBHOOK_TOKEN_SCRIBE / KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE           -> delivery-scribe
+#   KIROCREW_WEBHOOK_TOKEN_WORKER / KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER           -> github-worker (fast lane)
+# A source's destination is fixed on the Kiro Crew Webhooks page, so a job that borrows
+# another mate's token runs AS that mate and inherits its refusals.
+name: Kiro Crew delivery lifecycle
 
 on:
   issues:
     types: [labeled]
+  pull_request_target:
+    types: [labeled, closed]
 
-# The job only needs to check out the repository. No token reaches the dispatcher script.
+# Default: the jobs only check out the repository. No token reaches the dispatcher.
+# The gate job alone raises this to write labels and one comment.
 permissions:
   contents: read
 
 jobs:
-  issue-task:
-    # The dispatcher additionally verifies that the repository owner wrote the issue
-    # and applied the label.
-    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'kiro-task'
+  issue-plan:
+    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'kiro-plan'
     runs-on: [self-hosted, kirocrew]
-    # This job ends as soon as Kiro Crew accepts the webhook. The agent keeps working
-    # afterwards, so the group below only serialises the short dispatch step.
     timeout-minutes: 5
     concurrency:
-      group: kiro-crew-issue-task-${{ github.event.issue.number }}
+      group: kiro-crew-issue-${{ github.event.issue.number }}
       cancel-in-progress: false
     steps:
       # Always check out the DEFAULT branch: the dispatcher script and the workspace
@@ -37,10 +55,194 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           persist-credentials: false
-      - name: Dispatch maintainer-approved issue task
+      - name: Dispatch owner-requested plan
         env:
-          KIRO_MODE: issue-task
+          KIRO_MODE: issue-plan
           KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN }}
           KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
+
+  issue-deliver:
+    # One-label path: the planner posts the spec and then applies kiro-approved itself,
+    # which fires issue-implement below exactly as if the owner had applied it.
+    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'kiro-deliver'
+    runs-on: [self-hosted, kirocrew]
+    timeout-minutes: 5
+    concurrency:
+      group: kiro-crew-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Dispatch owner-requested plan with automatic approval
+        env:
+          KIRO_MODE: issue-deliver
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
+
+  issue-implement:
+    # The approval event starts the implementer directly. The dispatcher re-checks that
+    # the owner wrote the issue and applied the label; the implementer reads the spec
+    # from the owner's own comment and builds only inside its files block.
+    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'kiro-approved'
+    runs-on: [self-hosted, kirocrew]
+    timeout-minutes: 5
+    concurrency:
+      group: kiro-crew-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Dispatch approved specification to the implementer
+        env:
+          KIRO_MODE: issue-implement
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
+
+  issue-task:
+    if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'kiro-task'
+    runs-on: [self-hosted, kirocrew]
+    timeout-minutes: 5
+    concurrency:
+      group: kiro-crew-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Dispatch owner-approved fast-lane task
+        env:
+          KIRO_MODE: issue-task
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN_WORKER }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
+
+  pr-review-round:
+    # Same-repo delivery branches only. The dispatcher additionally checks that the owner
+    # opened the PR and applied the label (the mates label through the owner's gh login).
+    if: >-
+      github.event_name == 'pull_request_target'
+      && github.event.action == 'labeled'
+      && github.event.label.name == 'kiro-review'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'kiro/issue-')
+    runs-on: [self-hosted, kirocrew]
+    timeout-minutes: 5
+    concurrency:
+      group: kiro-crew-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Dispatch independent review
+        env:
+          KIRO_MODE: pr-review-round
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN_REVIEWER }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
+
+  pr-changes:
+    if: >-
+      github.event_name == 'pull_request_target'
+      && github.event.action == 'labeled'
+      && github.event.label.name == 'kiro-changes-requested'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'kiro/issue-')
+    runs-on: [self-hosted, kirocrew]
+    timeout-minutes: 5
+    concurrency:
+      group: kiro-crew-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Dispatch requested changes to the implementer
+        env:
+          KIRO_MODE: pr-changes
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
+
+  pr-gate:
+    # Deterministic, no agent. Reads PR facts from the API and writes one label and one
+    # comment. This is the only job with a write token; it never checks out PR code.
+    # Labels written with github.token do not re-trigger this workflow, so the two
+    # outcomes (kiro-ready-to-merge, kiro-parked) are terminal.
+    if: >-
+      github.event_name == 'pull_request_target'
+      && github.event.action == 'labeled'
+      && github.event.label.name == 'kiro-ready'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'kiro/issue-')
+    runs-on: [self-hosted, kirocrew]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: read
+    concurrency:
+      group: kiro-crew-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Run the delivery gate
+        env:
+          KIRO_MODE: pr-gate
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/kiro_gate.py"
+
+  pr-merged:
+    # Same-repo delivery branches only; the dispatcher additionally checks that the
+    # repository owner merged it into the default branch.
+    if: >-
+      github.event_name == 'pull_request_target'
+      && github.event.action == 'closed'
+      && github.event.pull_request.merged == true
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'kiro/issue-')
+    runs-on: [self-hosted, kirocrew]
+    timeout-minutes: 5
+    concurrency:
+      group: kiro-crew-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          persist-credentials: false
+      - name: Dispatch documentation refresh
+        env:
+          KIRO_MODE: pr-merged
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN_SCRIBE }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE }}
         run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
