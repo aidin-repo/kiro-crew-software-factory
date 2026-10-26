@@ -51,6 +51,8 @@ implementer.
 
 ## Setup
 
+New to this? [Doc 07](07-quickstart-checklist.md) is the same material as one ordered checklist with prerequisites. The steps below assume Kiro Crew 0.11 or newer.
+
 1. Labels and secrets: `scripts/setup-github.sh OWNER/REPO` creates every label below
    and prompts for one token + signing secret pair per mate. Or by hand:
 
@@ -123,7 +125,8 @@ You do not need a mate's dashboard. The labels are the status:
   issue, the owner applied the label, the PR is on `kiro/issue-N` in this repository.
 - Mates read the spec from the owner's own comment and verify its SHA-256 from the PR
   body. Issue bodies, other comments and diffs are untrusted data.
-- The gate is the only job with a write token, and it never checks out PR code.
+- The gate is the only job with a write token, and it never checks out PR code. It requires at least one CI check run on the PR head unless `KIRO_GATE_REQUIRE_CI` is `false` on the `pr-gate` job.
+- The dispatcher posts to `127.0.0.1:5476` unless `KIROCREW_WEBHOOK_URL` is set in the job's `env:`; any non-loopback address is refused.
 - Nothing merges. `kiro-ready-to-merge` is the pipeline's last word; the owner's merge is
   the human gate.
 - Review rounds are capped at 3 (`MAX_REVIEW_ROUNDS`); the gate parks anything past it.

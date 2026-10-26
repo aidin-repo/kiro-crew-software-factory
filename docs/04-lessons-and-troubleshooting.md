@@ -36,6 +36,8 @@ Everything here happened while building the working setup, first the single-stag
 | Reviewer finished with no review and the PR stays `kiro-review` | The host refused a command (redirect, pipe, `npm ci` lifecycle scripts, nvm) in the unattended turn and the reviewer stopped | Fixed: plain-shell rule, `npm ci --ignore-scripts`, CI fallback with the refusal named under Commands; re-add `kiro-review` to retry |
 | Scribe (or fast lane) reports "my role does not allow me to push" | The job used the planner's token, so the source routed it to the planner | One source and secret pair per mate (`_SCRIBE`, `_WORKER`); doc 01, section 1.2 |
 | Planner applies `kiro-needs-owner` on a clear issue | Older planner prompt held whenever it had added an `(assumption)` requirement of its own | Fixed: the planner's own ideas go to Open questions; it holds only for vague, infra, credentials, auth or data-deletion changes |
+| Gate parks every PR with "CI: no check runs found" | The repository has no CI workflow on pull requests | Add one, or set `KIRO_GATE_REQUIRE_CI: "false"` on the `pr-gate` job (doc 01, section 1.3) |
+| `Kiro Crew webhook unavailable` on every job although the gateway is running | The gateway is not on port 5476 | Set `KIROCREW_WEBHOOK_URL` in the workflow (doc 01, section 1.3) |
 | A leftover `kiro-review-N` or `kiro-worktree-N` folder in the runner's `_work` | A mate stopped early before cleanup | Fixed in the prompts (clean up even on stop); remove the folder and `git worktree prune` in the trusted checkout |
 
 ## What went wrong, in order

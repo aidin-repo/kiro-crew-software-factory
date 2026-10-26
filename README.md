@@ -55,7 +55,13 @@ Everything runs on your machine. A self-hosted Actions runner turns each label e
 
 ## Quick start
 
-You need a **private** GitHub repository you own, the `gh` CLI logged in as the owner, Python 3, and Kiro Crew running on the machine that will do the work. That machine can be your laptop or a remote Kiro Crew machine such as a dev box or an EC2 instance ([docs/05](docs/05-run-on-a-remote-machine.md), not yet tested).
+New here? Follow **[docs/07, the zero-to-first-PR checklist](docs/07-quickstart-checklist.md)**: one ordered list with a checkbox per step. The summary below is for people who have done it before.
+
+You need:
+
+- a **private** GitHub repository you own personally (not an org), with a CI workflow that runs on pull requests;
+- **Kiro Crew 0.11 or newer**, running and signed in to a model, on the machine that will do the work (your laptop, or a remote box per [docs/05](docs/05-run-on-a-remote-machine.md), not yet tested);
+- `gh` logged in as the owner, plus `git`, `python3`, `curl`, and the runtime your CI uses (for Node projects, the same Node major).
 
 **1. Kiro Crew side** (see [docs/06](docs/06-delivery-lifecycle.md) and [docs/02](docs/02-kiro-crew-setup.md)):
 
@@ -117,12 +123,15 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 - **No live steering.** Each webhook run is unattended and ephemeral. You see its report as a dashboard notification when it finishes, and PR comments do not reach a mate; labels do.
 - **Comment reviews, not approvals.** The reviewer posts a `--comment` review because GitHub refuses approve/request-changes on your own PR. The gate reads the `VERDICT:` line instead of review state.
 - **Unattended host policy.** Some commands (switching Node versions with nvm, running npm lifecycle scripts) are refused in unattended turns. The mates fall back to CI's results and say so in the review.
+- **Needs CI.** The gate requires at least one CI check on the PR head. A repository with no CI workflow parks every PR until you set `KIRO_GATE_REQUIRE_CI: "false"` on the `pr-gate` job.
+- **Gateway port.** The dispatcher assumes `127.0.0.1:5476`. Set `KIROCREW_WEBHOOK_URL` in the workflow if yours differs; non-loopback addresses are refused.
 
 ## Documentation
 
 | Doc | What it covers |
 |---|---|
-| [06 Delivery lifecycle](docs/06-delivery-lifecycle.md) | Start here: the five mates, the labels, setup, trust boundaries |
+| [07 Quick start checklist](docs/07-quickstart-checklist.md) | Start here if you are new: zero to first PR, one ordered list |
+| [06 Delivery lifecycle](docs/06-delivery-lifecycle.md) | The five mates, the labels, setup, trust boundaries |
 | [00 How it works](docs/00-how-it-works.md) | The fast lane (`kiro-task`) step by step, and what runs where |
 | [01 GitHub activation](docs/01-github-activation.md) | Labels, secrets, workflow, runner, branch protection |
 | [02 Kiro Crew setup](docs/02-kiro-crew-setup.md) | Webhook sources, mates, routing, approvals |

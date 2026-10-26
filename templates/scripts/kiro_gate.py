@@ -180,7 +180,14 @@ def decide(facts):
     ci_runs = ci_check_runs(facts["check_runs"])
     bad = [c for c in ci_runs if (c.get("conclusion") or "pending") not in GOOD_CONCLUSIONS]
     if not ci_runs:
-        reasons.append("CI: no check runs found on the head commit (outside the delivery lifecycle's own jobs)")
+        if facts.get("require_ci", True):
+            reasons.append(
+                "CI: no check runs found on the head commit outside the delivery lifecycle's own jobs. "
+                "Add a CI workflow that runs on pull requests, or set KIRO_GATE_REQUIRE_CI=false on the "
+                "pr-gate job to make this a warning"
+            )
+        else:
+            reasons.append("CI: no check runs on the head commit; KIRO_GATE_REQUIRE_CI=false so this is not blocking (warning)")
     for check in bad:
         reasons.append("CI: {} is {}".format(check.get("name"), check.get("conclusion") or "pending"))
 
@@ -285,7 +292,19 @@ def gather_facts(github, pull_request, owner):
         "allowed_files": allowed_files,
         "rounds": rounds,
         "spec_sha_matches": spec_sha_matches,
+        "require_ci": require_ci(os.environ),
     }
+
+
+def require_ci(environment):
+    """True unless KIRO_GATE_REQUIRE_CI is set to a false-ish value.
+
+    A repository with no CI workflow has no check runs on any commit; by default the gate
+    treats that as a block (the reviewer's local test run is then the only evidence), and
+    the owner can turn it into a warning once they have decided that is acceptable.
+    """
+    value = (environment.get("KIRO_GATE_REQUIRE_CI") or "true").strip().lower()
+    return value not in {"0", "false", "no", "off"}
 
 
 def publish(github, number, passed, reasons, head_sha):

@@ -217,6 +217,9 @@ jobs:
           KIRO_MODE: pr-gate
           KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           GITHUB_TOKEN: ${{ github.token }}
+          # The gate requires at least one CI check run on the PR head. A repository with
+          # no CI workflow would park every PR; set this to "false" to make that a warning.
+          KIRO_GATE_REQUIRE_CI: "true"
         run: python3 "$KIRO_WORKSPACE/.github/scripts/kiro_gate.py"
 
   pr-merged:

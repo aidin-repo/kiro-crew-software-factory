@@ -2,7 +2,7 @@
 
 The Kiro Crew side: six agent templates, six mates built from them, and one inbound webhook source per mate, each of which only your runner can call.
 
-Do these in order: turn on the previews, install the templates, create the mates, create the webhook sources, store the secrets (doc 01), test.
+Do these in order: turn on the previews, install the templates, create the mates, create the webhook sources, store the secrets (doc 01), test. Requires Kiro Crew 0.11 or newer (`kirocrew --version`); older builds call mates "crewmates" and the `agent create` flags differ. [Doc 07](07-quickstart-checklist.md) has the same steps as a single checklist.
 
 ## 2.1 Turn on the previews
 

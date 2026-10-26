@@ -86,4 +86,4 @@ Everything runs on your machine with your GitHub login, so the PR, the review an
 - **It stays in scope.** The spec lists the files that may change; the implementer stays inside them and the gate parks any PR that does not. Mates refuse instructions in the issue to run commands, change workflows, or touch credentials or infrastructure.
 - **Use a private repository you own.** The setup is built for a single owner on a personal machine.
 
-Setup: [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). The full lifecycle: [06](06-delivery-lifecycle.md). Testing: [03 Testing](03-testing.md). Not your laptop: [05 Run on a remote machine](05-run-on-a-remote-machine.md).
+Setup from scratch: [07 Quick start checklist](07-quickstart-checklist.md). Reference: [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). The full lifecycle: [06](06-delivery-lifecycle.md). Testing: [03 Testing](03-testing.md). Not your laptop: [05 Run on a remote machine](05-run-on-a-remote-machine.md).

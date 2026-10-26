@@ -79,6 +79,11 @@ This copies the files below and prints the commit commands. It does not commit f
 | `.github/scripts/tests/test_dispatch_kiro_event.py`, `test_kiro_gate.py` | Unit tests (134) |
 | `.github/kiro-agents/*.json`, `*.md` | The mate prompts, versioned with the code they act on |
 
+Two settings to check before you merge:
+
+- **Gateway address.** The dispatcher posts to `http://127.0.0.1:5476/api/hooks/agent`. If your gateway listens on another port, add `KIROCREW_WEBHOOK_URL: http://127.0.0.1:PORT/api/hooks/agent` to each dispatch job's `env:`. Any non-loopback host is refused.
+- **CI requirement.** The `pr-gate` job sets `KIRO_GATE_REQUIRE_CI: "true"`: the gate parks a PR whose head has no CI check runs. If the repository has no CI workflow yet, set it to `"false"` so the lack of CI is a warning in the gate comment instead of a block.
+
 The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 1.5 so a mate cannot change these files without review.
 
 The dispatcher removes what GitHub does not show you before it reaches a mate: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters. What you read in the rendered issue is what the mate gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read. The implementer reads the spec from the planner's comment, not the issue body, and verifies that the comment's author is you.
