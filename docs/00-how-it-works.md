@@ -38,17 +38,17 @@ flowchart TB
   subgraph machine["Your machine (runner + Kiro Crew gateway)"]
     direction TB
     E1 --> J1["Actions job issue-deliver<br/>dispatch_kiro_event.py validates,<br/>signed POST to 127.0.0.1"]
-    J1 --> P["planner mate<br/>reads code, writes AIDLC spec comment<br/>applies kiro-approved"]
+    J1 --> P["planner<br/>reads code, writes AIDLC spec comment<br/>applies kiro-approved"]
     P --> J2["Actions job issue-implement"]
-    J2 --> IMP["implementer mate<br/>fresh worktree, builds inside the spec's files block,<br/>opens PR, applies kiro-review"]
+    J2 --> IMP["implementer<br/>fresh worktree, builds inside the spec's files block,<br/>opens PR, applies kiro-review"]
     IMP --> J3["Actions job pr-review-round"]
-    J3 --> R["reviewer mate<br/>own memory, never saw the implementer<br/>tests + build, VERDICT review,<br/>applies kiro-ready or kiro-changes-requested"]
+    J3 --> R["reviewer<br/>fresh session, never reads the implementer<br/>tests + build, VERDICT review,<br/>applies kiro-ready or kiro-changes-requested"]
     R -->|kiro-changes-requested| J2
     R -->|kiro-ready| G["Actions job pr-gate<br/>kiro_gate.py (no model):<br/>SHA reviewed, CI green, scope, hash, rounds"]
   end
   G -->|kiro-ready-to-merge| M["You review and merge"]
   G -.->|kiro-parked| M
-  M -->|merged| S["scribe mate<br/>docs-only PR"]
+  M -->|merged| S["scribe<br/>docs-only PR"]
 ```
 
 In words:
@@ -56,7 +56,7 @@ In words:
 1. Adding a label sends an event from GitHub to a small workflow in your repo. Every label in the lifecycle has one job in that workflow.
 2. The job runs on your machine, on a GitHub Actions runner you installed. It checks out the repo's default branch, never PR code, and runs a short script.
 3. The script checks the event: right repository, right label, the owner wrote the issue and applied the label, the issue is open, and for PR labels, the owner opened the PR and it is on a `kiro/issue-N` branch of this repository. It strips hidden text (HTML comments, invisible characters) and passes the GitHub text to Kiro Crew as data, not as commands, in a signed request to the local gateway.
-4. The gateway routes the request to the mate that owns this label. Each mate has its own webhook source, so each runs as itself with its own memory. It starts a fresh session for that one hop, does the work, writes the next label, and the session ends.
+4. The gateway routes the request to the agent template that owns this label. Each role has its own webhook source, so each runs with only its own rules. It starts a fresh session for that one hop, does the work, writes the next label, and the session ends.
 5. The next label fires the next job. No mate waits for another; nothing polls. The only timer is the optional auditor, which reports a label that has not moved.
 6. The gate job is different: it runs a Python script with a GitHub token instead of a mate. It reads the PR through the API, never checks out PR code, and writes one comment and one label.
 

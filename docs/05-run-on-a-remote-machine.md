@@ -1,6 +1,6 @@
 # 5. Run it on a remote machine instead of your laptop
 
-You do not have to use your laptop. Everything in this package runs on **one machine**: the Kiro Crew gateway, the GitHub Actions runner and the six mates. That machine can be a dev box or an EC2 instance that already runs Kiro Crew. The benefit is that it stays on, so labelled issues do not wait for your laptop to wake up.
+You do not have to use your laptop. Everything in this package runs on **one machine**: the Kiro Crew gateway, the GitHub Actions runner and the agent templates. That machine can be a dev box or an EC2 instance that already runs Kiro Crew. The benefit is that it stays on, so labelled issues do not wait for your laptop to wake up.
 
 > **Status: not tested yet.** The whole package was verified on a Mac laptop. The steps below follow the Kiro Crew and GitHub runner documentation, and the scripts support Linux, but this setup has not been run end to end on a remote machine. Treat each step as unverified until you have run it, and re-run `scripts/smoke-test.sh` at the end.
 
@@ -10,7 +10,7 @@ You do not have to use your laptop. Everything in this package runs on **one mac
 - The runner calls the gateway on `127.0.0.1`, so the runner and the gateway have to share a machine.
 - The mates edit code in the runner's checkout, so they have to run there too.
 
-So the remote machine needs its own gateway, its own mates, its own webhook sources and its own runner. Nothing from your laptop carries over, including every webhook token and signing secret.
+So the remote machine needs its own gateway, its own templates, its own webhook sources and its own runner. Nothing from your laptop carries over, including every webhook token and signing secret.
 
 ## 5.2 What the remote machine needs
 
@@ -26,7 +26,7 @@ So the remote machine needs its own gateway, its own mates, its own webhook sour
 
 In Settings, Remote Crew, add the machine, then switch to it from the strip at the top of the dashboard. The hub tunnels to the remote's loopback port over SSH or AWS SSM, so nothing is opened on the machine. A box created by the cloud launcher is registered for you over SSM.
 
-Everything in docs 01 to 03 that says "dashboard" then means **the remote machine's dashboard**, opened in its pane. Create the mates and the webhook sources there, not on your laptop.
+Everything in docs 01 to 03 that says "dashboard" then means **the remote machine's dashboard**, opened in its pane. Install the templates and create the webhook sources there, not on your laptop.
 
 ## 5.4 Steps
 
@@ -35,7 +35,7 @@ Everything in docs 01 to 03 that says "dashboard" then means **the remote machin
 3. **Keep it running after logout.** For a user-level gateway, run `loginctl enable-linger <user>` on the machine.
 4. **Get this package onto the machine.** The simplest way is a private git repo that you clone there.
 5. **Log in to GitHub** on the machine with `gh auth login`, using a token scoped to the test repo. Do this yourself in the machine's terminal so the token never goes through a chat.
-6. **Install the templates, create the six mates and the five webhook sources** on the remote machine, following doc 02 (`scripts/install-agent.sh`, then `kirocrew agent create` for each, then one source per mate on its dashboard).
+6. **Install the templates and create the five webhook sources** on the remote machine, following doc 02 (`scripts/install-agent.sh`, then one source per template on its dashboard).
 7. **Install and start the runner** on the machine. Run `scripts/setup-github.sh`, `scripts/install-into-repo.sh` and `scripts/install-runner.sh` as in doc 01. To keep the runner running after logout, use the runner's service commands. GitHub's runner documentation says these need `sudo` on Linux, which I have not confirmed on your machine.
 8. **Run the same user for the runner and the gateway.** The mates write into the runner's checkout, so a different user may hit permission errors.
 9. **Verify.** On the machine, run `scripts/preflight.sh OWNER/REPO`, then `CLEANUP=1 scripts/smoke-test.sh OWNER/REPO`.
