@@ -8,7 +8,7 @@ You do not have to use your laptop. Everything in this package runs on **one mac
 
 - The webhook endpoint listens on **loopback only** (`127.0.0.1:5476`). The dispatcher refuses any other address, and you should never expose the port.
 - The runner calls the gateway on `127.0.0.1`, so the runner and the gateway have to share a machine.
-- The mates edit code in the runner's checkout, so they have to run there too.
+- The agents edit code in the runner's checkout, so they have to run there too.
 
 So the remote machine needs its own gateway, its own templates, its own webhook sources and its own runner. Nothing from your laptop carries over, including every webhook token and signing secret.
 
@@ -31,13 +31,13 @@ Everything in docs 01 to 03 that says "dashboard" then means **the remote machin
 ## 5.4 Steps
 
 1. **Use a separate private test repo.** If the laptop and the remote machine both serve the same repo, they share the runner label `kirocrew` and the repo secrets. Only one gateway's tokens are valid at a time, so the other machine's webhooks get HTTP 401. Use one machine per repo.
-2. **Check the machine.** On it, run `kirocrew doctor`. If it reports "Sandbox backend unavailable", user namespaces are disabled. Enable them or opt into unsandboxed execution (see the Kiro Crew EC2 guide) before continuing, because the mates run shell commands.
+2. **Check the machine.** On it, run `kirocrew doctor`. If it reports "Sandbox backend unavailable", user namespaces are disabled. Enable them or opt into unsandboxed execution (see the Kiro Crew EC2 guide) before continuing, because the agents run shell commands.
 3. **Keep it running after logout.** For a user-level gateway, run `loginctl enable-linger <user>` on the machine.
 4. **Get this package onto the machine.** The simplest way is a private git repo that you clone there.
 5. **Log in to GitHub** on the machine with `gh auth login`, using a token scoped to the test repo. Do this yourself in the machine's terminal so the token never goes through a chat.
 6. **Install the templates and create the five webhook sources** on the remote machine, following doc 02 (`scripts/install-agent.sh`, then one source per template on its dashboard).
 7. **Install and start the runner** on the machine. Run `scripts/setup-github.sh`, `scripts/install-into-repo.sh` and `scripts/install-runner.sh` as in doc 01. To keep the runner running after logout, use the runner's service commands. GitHub's runner documentation says these need `sudo` on Linux, which I have not confirmed on your machine.
-8. **Run the same user for the runner and the gateway.** The mates write into the runner's checkout, so a different user may hit permission errors.
+8. **Run the same user for the runner and the gateway.** The agents write into the runner's checkout, so a different user may hit permission errors.
 9. **Verify.** On the machine, run `scripts/preflight.sh OWNER/REPO`, then `CLEANUP=1 scripts/smoke-test.sh OWNER/REPO`.
 
 ## 5.5 Security on a remote machine
@@ -45,7 +45,7 @@ Everything in docs 01 to 03 that says "dashboard" then means **the remote machin
 A remote machine is easier to reach than a laptop, so be stricter:
 
 - **No inbound ports.** Reach it over SSM or an SSH tunnel only. Keep the gateway on loopback.
-- **Least-privilege instance role.** The mates' shell commands run on the instance and can use its AWS role. Give the role only what SSM needs.
+- **Least-privilege instance role.** The agents' shell commands run on the instance and can use its AWS role. Give the role only what SSM needs.
 - **Require IMDSv2** with a hop limit of 1, so a command cannot read role credentials from the metadata service.
 - **Private repos only**, and a GitHub token scoped to one repository.
 - **Do not put the webhook token or signing secret** in instance user data, an image, or a file in a repo.

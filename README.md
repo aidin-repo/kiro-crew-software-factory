@@ -2,7 +2,7 @@
 
 > **Proof of concept.** This is a POC. It still needs to be tested and validated before you rely on it, and it should not be used on anything you cannot afford to review carefully.
 
-**Write an issue. Add a label. Get a specified, implemented, independently reviewed, gate-checked pull request.** Five small Kiro Crew mates on a machine you control each do one job and hand off through GitHub labels. You decide what ships.
+**Write an issue. Add a label. Get a specified, implemented, independently reviewed, gate-checked pull request.** Five small Kiro Crew agents on a machine you control each do one job and hand off through GitHub labels. You decide what ships.
 
 ## What is Kiro Crew
 
@@ -12,13 +12,13 @@ This project uses three of its features:
 
 - **Webhooks:** an authenticated endpoint that starts an agent when an outside event arrives. Here every event is a GitHub label.
 - **Agent templates:** named agents with their own instructions and tools. Here, five roles: planner, implementer, reviewer, scribe and auditor, each a template file under `~/.kiro/agents/`.
-- **Host guardrails:** tool approval, denied commands, sandboxing and an audit log apply to what each mate does.
+- **Host guardrails:** tool approval, denied commands, sandboxing and an audit log apply to what each agent does.
 
 ## Why a "software factory"
 
 The Kiro team describes building Kiro Crew with a [software factory](https://kiro.dev/blog/software-factory-1000-prs/): an assembly line of agent stages (triage, implement, review, merge) with a queue between them. Their advice for starting is to build a pipeline before an orchestrator, and that "labels on a GitHub issue are a perfectly good queue to start with".
 
-This project takes that literally. GitHub labels are the queue, the state machine and the audit trail. There is no orchestrator: each stage is a mate that reads one label and writes the next, and a deterministic script decides "ready to merge". A human merges.
+This project takes that literally. GitHub labels are the queue, the state machine and the audit trail. There is no orchestrator: each stage is an agent that reads one label and writes the next, and a deterministic script decides "ready to merge". A human merges.
 
 | Factory stage | Here | Label in | Label out |
 |---|---|---|---|
@@ -51,7 +51,7 @@ flowchart LR
     M -->|merged| S["scribe<br/>docs PR"]
 ```
 
-Everything runs on your machine. A self-hosted Actions runner turns each label event into a signed webhook to the local Kiro Crew gateway; the gateway runs the mate; the mate's shell, git and tests execute on your disk. GitHub only stores issues, labels, branches and PRs and fires the events. Only the repository owner's labels start work, and nothing merges on its own. [Doc 06](docs/06-delivery-lifecycle.md) is the full picture; [Doc 00](docs/00-how-it-works.md) walks the fast lane step by step.
+Everything runs on your machine. A self-hosted Actions runner turns each label event into a signed webhook to the local Kiro Crew gateway; the gateway runs the agent for that label; its shell, git and tests execute on your disk. GitHub only stores issues, labels, branches and PRs and fires the events. Only the repository owner's labels start work, and nothing merges on its own. [Doc 06](docs/06-delivery-lifecycle.md) is the full picture; [Doc 00](docs/00-how-it-works.md) walks the fast lane step by step.
 
 ## Quick start
 
@@ -78,7 +78,7 @@ Then under **Settings → Webhooks** create one signed source per template with 
 ```bash
 gh auth setup-git
 scripts/setup-github.sh OWNER/REPO       # labels + one secret pair per template (prompts for each)
-scripts/install-into-repo.sh ~/code/REPO # workflow, dispatcher, gate, tests, mate templates
+scripts/install-into-repo.sh ~/code/REPO # workflow, dispatcher, gate, tests, agent templates
 scripts/install-runner.sh OWNER/REPO
 ```
 
@@ -105,24 +105,24 @@ An issue's text can influence a program that has shell access to your machine, s
 
 - **Private repositories only.** The setup scripts refuse any repository that is not private.
 - **Owner-gated at every hop.** The dispatcher re-checks each event: the owner wrote the issue, the owner applied the label, the PR is on `kiro/issue-N` in this repository and still open. A collaborator's label starts nothing.
-- **Issue text is data.** It is base64-encoded into a marked untrusted block, after hidden HTML comments and invisible characters are removed, so the agent reads what you read. Mates never run commands copied from it and refuse to widen scope or touch workflows, credentials, deployment or infrastructure.
+- **Issue text is data.** It is base64-encoded into a marked untrusted block, after hidden HTML comments and invisible characters are removed, so the agent reads what you read. Agents never run commands copied from it and refuse to widen scope or touch workflows, credentials, deployment or infrastructure.
 - **The spec is the contract.** The implementer builds only the files the owner-approved spec lists; the PR body carries the spec's URL and SHA-256; the reviewer and the gate both verify it.
-- **One role, one job, one token.** Each stage runs as its own template with its own webhook source in its own ephemeral session, so a stage cannot borrow another's permissions and the reviewer never reads the implementer's session.
+- **One agent, one job, one token.** Each stage runs as its own template with its own webhook source in its own ephemeral session, so a stage cannot borrow another's permissions and the reviewer never reads the implementer's session.
 - **Trusted code only.** Jobs check out the default branch. The gate never checks out PR code; it reads the GitHub API.
 - **Signed and loopback.** The dispatcher sends a bearer token plus an HMAC signature, refuses any non-loopback webhook URL, ignores proxy settings and never follows a redirect.
 - **No merge, no deploy.** `kiro-ready-to-merge` is the pipeline's last word. Protect the default branch with a ruleset that requires a pull request and does not let admins bypass it (docs/01, section 1.5).
 - **Rounds are capped.** Three review rounds, then the gate parks the PR for you.
 - **It runs shell commands as you.** Commits, reviews and PRs appear under your GitHub account, so treat the label like typing the command yourself.
 
-The owner checks, loopback rule, signature, scope check and round cap are enforced in code. Rules such as "do not touch workflows" live in the mates' prompts, which is a weaker layer.
+The owner checks, loopback rule, signature, scope check and round cap are enforced in code. Rules such as "do not touch workflows" live in the agents' prompts, which is a weaker layer.
 
 ## Limitations
 
-- **The machine must be on** and the runner running, or labelled issues queue in GitHub Actions. The auditor mate exists to tell you when something has stalled.
+- **The machine must be on** and the runner running, or labelled issues queue in GitHub Actions. The optional auditor mate exists to tell you when something has stalled.
 - **One branch per issue.** `kiro/issue-N` is fixed, so a second implementation of the same issue stops. Use a new issue or delete the branch.
-- **No live steering.** Each webhook run is unattended and ephemeral. You see its report as a dashboard notification when it finishes, and PR comments do not reach a mate; labels do.
+- **No live steering.** Each webhook run is unattended and ephemeral. You see its report as a dashboard notification when it finishes, and PR comments do not reach an agent; labels do.
 - **Comment reviews, not approvals.** The reviewer posts a `--comment` review because GitHub refuses approve/request-changes on your own PR. The gate reads the `VERDICT:` line instead of review state.
-- **Unattended host policy.** Some commands (switching Node versions with nvm, running npm lifecycle scripts) are refused in unattended turns. The mates fall back to CI's results and say so in the review.
+- **Unattended host policy.** Some commands (switching Node versions with nvm, running npm lifecycle scripts) are refused in unattended turns. The agents fall back to CI's results and say so in the review.
 - **Needs CI.** The gate requires at least one CI check on the PR head. A repository with no CI workflow parks every PR until you set `KIRO_GATE_REQUIRE_CI: "false"` on the `pr-gate` job.
 - **Gateway port.** The dispatcher assumes `127.0.0.1:5476`. Set `KIROCREW_WEBHOOK_URL` in the workflow if yours differs; non-loopback addresses are refused.
 
@@ -131,12 +131,12 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 | Doc | What it covers |
 |---|---|
 | [07 Quick start checklist](docs/07-quickstart-checklist.md) | Start here if you are new: zero to first PR, one ordered list |
-| [06 Delivery lifecycle](docs/06-delivery-lifecycle.md) | The five mates, the labels, setup, trust boundaries |
+| [06 Delivery lifecycle](docs/06-delivery-lifecycle.md) | The five agents, the labels, setup, trust boundaries |
 | [00 How it works](docs/00-how-it-works.md) | The fast lane (`kiro-task`) step by step, and what runs where |
 | [01 GitHub activation](docs/01-github-activation.md) | Labels, secrets, workflow, runner, branch protection |
-| [02 Kiro Crew setup](docs/02-kiro-crew-setup.md) | Webhook sources, mates, routing, approvals |
+| [02 Kiro Crew setup](docs/02-kiro-crew-setup.md) | Templates, webhook sources, routing, approvals, the optional auditor mate |
 | [03 Testing](docs/03-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests |
 | [04 Lessons and troubleshooting](docs/04-lessons-and-troubleshooting.md) | What went wrong while building this, and the fixes |
 | [05 Run on a remote machine](docs/05-run-on-a-remote-machine.md) | Use a dev box or EC2 instance instead of your laptop (not yet tested) |
 
-The folders are `templates/` (workflow, dispatcher, gate, tests, mate prompts) and `scripts/` (setup, install, preflight, smoke test).
+The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/` (setup, install, preflight, smoke test).

@@ -56,7 +56,7 @@ Watch it in four places:
 |---|---|---|
 | Repo, Actions tab, *Kiro Crew delivery lifecycle* | seconds after each label | One run per hop: `issue-deliver`, `issue-implement`, `pr-review-round`, `pr-gate`; each other job skipped |
 | The issue and the PR | 1 min, then every 2 to 4 min | Labels move: `kiro-approved`; PR with `kiro-review`; `kiro-ready`; `kiro-ready-to-merge` |
-| Kiro Crew dashboard notifications | after each hop | `Webhook: GitHub <repo>`: each mate's report |
+| Kiro Crew dashboard notifications | after each hop | `Webhook: GitHub <repo>`: each agent's report |
 | Webhooks page, Activity | after each hop | A run per source, `completed`, with its duration |
 
 Typical timings from testing: planner 60 to 90 s, implementer 3 to 5 min, reviewer 2 to 3 min, gate 15 to 20 s. Label to `kiro-ready-to-merge` in 6 to 8 minutes.

@@ -1,7 +1,7 @@
 # Installed to .github/workflows/kiro-crew-events.yml in the target repository.
 #
 # The delivery lifecycle is a label state machine on GitHub. Every hop is an event, no
-# mate polls, and one mate does one job. Each mate is its own Kiro Crew webhook source
+# mate polls, and one mate does one job. Each agent is its own Kiro Crew webhook source
 # (its own token + signing secret) so the gateway maps it to its own agent and memory.
 #
 #   issues:labeled  kiro-plan                -> issue-plan      : delivery-planner posts an AIDLC spec (read-only)

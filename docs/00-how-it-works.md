@@ -1,6 +1,6 @@
 # 0. How it works
 
-You write a GitHub issue and add one label. Five small Kiro Crew mates, running on your own machine, take it from there: one writes a specification, one implements it, one reviews it independently, a script checks the result, and one updates the docs after you merge. Each hands off to the next through a GitHub label. You read the final pull request and decide whether to merge.
+You write a GitHub issue and add one label. Five small Kiro Crew agents, running on your own machine, take it from there: one writes a specification, one implements it, one reviews it independently, a script checks the result, and one updates the docs after you merge. Each hands off to the next through a GitHub label. You read the final pull request and decide whether to merge.
 
 ## Using it
 
@@ -26,7 +26,7 @@ Users drafting longer messages want to know how long their message is before sen
 
 **2. Add the `kiro-deliver` label.** This is the "go" signal. Only the repository owner's label counts; a label from anyone else is refused. You can add it when you create the issue.
 
-**3. Wait a few minutes.** Watch the labels move: `kiro-approved` on the issue within about a minute, then a pull request on `kiro/issue-<number>` labelled `kiro-review`, then `kiro-ready`, then `kiro-ready-to-merge`. In testing the whole run took 6 to 8 minutes. Each mate's report arrives as a dashboard notification titled `Webhook: GitHub <repo>`.
+**3. Wait a few minutes.** Watch the labels move: `kiro-approved` on the issue within about a minute, then a pull request on `kiro/issue-<number>` labelled `kiro-review`, then `kiro-ready`, then `kiro-ready-to-merge`. In testing the whole run took 6 to 8 minutes. Each agent's report arrives as a dashboard notification titled `Webhook: GitHub <repo>`.
 
 **4. Decide.** Open the PR. The reviewer's `VERDICT:` review and the gate's "Delivery gate: PASS" comment tell you what was checked. CI has run. Read the diff, try the change, and merge it if it is right. Nothing merges on its own. After you merge, the scribe opens a docs-only PR if the change needs documenting.
 
@@ -57,8 +57,8 @@ In words:
 2. The job runs on your machine, on a GitHub Actions runner you installed. It checks out the repo's default branch, never PR code, and runs a short script.
 3. The script checks the event: right repository, right label, the owner wrote the issue and applied the label, the issue is open, and for PR labels, the owner opened the PR and it is on a `kiro/issue-N` branch of this repository. It strips hidden text (HTML comments, invisible characters) and passes the GitHub text to Kiro Crew as data, not as commands, in a signed request to the local gateway.
 4. The gateway routes the request to the agent template that owns this label. Each role has its own webhook source, so each runs with only its own rules. It starts a fresh session for that one hop, does the work, writes the next label, and the session ends.
-5. The next label fires the next job. No mate waits for another; nothing polls. The only timer is the optional auditor, which reports a label that has not moved.
-6. The gate job is different: it runs a Python script with a GitHub token instead of a mate. It reads the PR through the API, never checks out PR code, and writes one comment and one label.
+5. The next label fires the next job. No agent waits for another; nothing polls. The only timer is the optional auditor, which reports a label that has not moved.
+6. The gate job is different: it runs a Python script with a GitHub token instead of an agent. It reads the PR through the API, never checks out PR code, and writes one comment and one label.
 
 Everything runs on your machine with your GitHub login, so the PR, the review and the commits show your account.
 
@@ -81,9 +81,9 @@ Everything runs on your machine with your GitHub login, so the PR, the review an
 
 - **The machine must be on** and the runner running, or the label waits in GitHub until it is back. To stop depending on your laptop, use a remote Kiro Crew machine: see [05](05-run-on-a-remote-machine.md).
 - **One branch per issue.** `kiro/issue-N` is fixed. A second implementation of the same issue stops rather than force-pushing. Open a new issue, or delete the branch.
-- **You can't steer a run.** Each hop is unattended and ephemeral. PR comments do not reach a mate; labels do. To get another review round after you edit the branch yourself, remove and re-add `kiro-review`.
-- **Where to watch it.** The labels on the issue and PR are the status. The `VERDICT:` review and the gate comment are the record. Each mate's report is a dashboard notification; the Webhooks page's Activity list has the full transcript. The mates' own dashboards stay empty for webhook runs, by design.
-- **It stays in scope.** The spec lists the files that may change; the implementer stays inside them and the gate parks any PR that does not. Mates refuse instructions in the issue to run commands, change workflows, or touch credentials or infrastructure.
+- **You can't steer a run.** Each hop is unattended and ephemeral. PR comments do not reach an agent; labels do. To get another review round after you edit the branch yourself, remove and re-add `kiro-review`.
+- **Where to watch it.** The labels on the issue and PR are the status. The `VERDICT:` review and the gate comment are the record. Each agent's report is a dashboard notification; the Webhooks page's Activity list has the full transcript. Webhook runs appear on no mate's dashboard; they are not tied to one.
+- **It stays in scope.** The spec lists the files that may change; the implementer stays inside them and the gate parks any PR that does not. Agents refuse instructions in the issue to run commands, change workflows, or touch credentials or infrastructure.
 - **Use a private repository you own.** The setup is built for a single owner on a personal machine.
 
 Setup from scratch: [07 Quick start checklist](07-quickstart-checklist.md). Reference: [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). The full lifecycle: [06](06-delivery-lifecycle.md). Testing: [03 Testing](03-testing.md). Not your laptop: [05 Run on a remote machine](05-run-on-a-remote-machine.md).

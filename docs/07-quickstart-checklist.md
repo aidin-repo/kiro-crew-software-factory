@@ -11,7 +11,7 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
 - [ ] **Kiro Crew signed in to a model.** Open any chat and send "hello". If it answers, you are signed in.
 - [ ] **`gh` logged in as the repository owner:** `gh auth status`. Use a fine-grained token scoped to the one repository if you can.
 - [ ] **`git`, `python3`, `curl` on PATH.** Check with `git --version && python3 --version && curl --version`.
-- [ ] **The runtime your repo's CI uses** (for a Node project, the same Node major as `ci.yml`, via nvm or otherwise). The mates run your tests locally; if they cannot, they fall back to CI's results and say so.
+- [ ] **The runtime your repo's CI uses** (for a Node project, the same Node major as `ci.yml`, via nvm or otherwise). The agents run your tests locally; if they cannot, they fall back to CI's results and say so.
 - [ ] **A CI workflow on pull requests** in the repository (`.github/workflows/ci.yml` or similar). The gate requires at least one CI check on the PR head. If your repo has no CI yet, set `KIRO_GATE_REQUIRE_CI: "false"` on the `pr-gate` job after step 5, or the gate parks every PR.
 - [ ] **This repository cloned:**
 
@@ -94,7 +94,7 @@ Alternative for the secrets: export all ten as environment variables and let `sc
 
   Creates the ten `kiro-*` labels. Check them on the repository's Labels page.
 
-- [ ] Install the workflow, dispatcher, gate, tests and mate templates into a local clone of your repository:
+- [ ] Install the workflow, dispatcher, gate, tests and agent templates into a local clone of your repository:
 
   ```bash
   gh auth setup-git

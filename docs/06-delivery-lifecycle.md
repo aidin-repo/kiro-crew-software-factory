@@ -1,6 +1,6 @@
 # Delivery lifecycle
 
-One mate, one job. Every handoff is a GitHub label event. Nothing polls except the
+One agent, one job. Every handoff is a GitHub label event. Nothing polls except the
 auditor, whose only job is to notice a stall.
 
 ```mermaid
@@ -88,7 +88,7 @@ New to this? [Doc 07](07-quickstart-checklist.md) is the same material as one or
    ```
 
    `KIROCREW_WEBHOOK_TOKEN` and `KIROCREW_WEBHOOK_SIGNING_SECRET` stay as the planner's.
-   Every mate needs its own source: a source's destination is fixed, so a job that
+   Every agent needs its own source: a source's destination is fixed, so a job that
    borrows another mate's token runs as that mate and inherits its rules (a scribe run
    on the planner's token refuses to open the docs PR, because the planner may not push).
 
@@ -106,7 +106,7 @@ You do not need a mate's dashboard. The labels are the status:
 | Reviewer's conclusion | The `VERDICT:` review on the PR |
 | Why the gate passed or parked | The "Delivery gate" comment on the PR |
 | A hop did not fire | Actions tab, workflow "Kiro Crew delivery lifecycle"; each job is one hop |
-| What a mate reported | Dashboard notifications or Slack DM, "Webhook: GitHub <repo>" |
+| What an agent reported | Dashboard notifications or Slack DM, "Webhook: GitHub <repo>" |
 | Full transcript | Dashboard, Webhooks, Activity, click the run |
 
 ## Trust boundaries

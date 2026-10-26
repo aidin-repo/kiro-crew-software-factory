@@ -81,7 +81,7 @@ If a mate reports a denied tool, read its notification for the exact command, th
 - **Its prompt and tools** come from the template file in `~/.kiro/agents/`, read on every run. Edit the file and the next run uses it. The Webhooks Activity list shows which source, and so which template, ran each session.
 - **Each run is an ephemeral session**, destroyed afterwards. Nothing carries over between hops except what is on GitHub: the spec comment, the PR body with its spec URL and hash, the labels, the review.
 - **No mate dashboard fills up.** Webhook runs are not tied to any mate's standing chat or goals, even if you created a mate from the same template.
-- **Where to see the work:** the labels on the issue and PR, the `VERDICT:` review, the gate comment, the dashboard notification `Webhook: GitHub <repo>` (each mate's final report), and the Webhooks page's Activity list (outcome, duration and transcript of each run).
+- **Where to see the work:** the labels on the issue and PR, the `VERDICT:` review, the gate comment, the dashboard notification `Webhook: GitHub <repo>` (each agent's final report), and the Webhooks page's Activity list (outcome, duration and transcript of each run).
 
 ## 2.7 Operational facts
 
