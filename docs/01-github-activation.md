@@ -86,7 +86,7 @@ Two settings to check before you merge:
 
 The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 1.5 so an agent cannot change these files without review.
 
-The dispatcher removes what GitHub does not show you before it reaches a mate: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters. What you read in the rendered issue is what the mate gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read. The implementer reads the spec from the planner's comment, not the issue body, and verifies that the comment's author is you.
+The dispatcher removes what GitHub does not show you before it reaches an agent: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters. What you read in the rendered issue is what the mate gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read. The implementer reads the spec from the planner's comment, not the issue body, and verifies that the comment's author is you.
 
 ## 1.4 Register the self-hosted runner
 
@@ -124,7 +124,7 @@ gh auth setup-git
 
 `scripts/preflight.sh` warns when no helper is configured.
 
-Each run leaves a `trusted-main-<run>-<attempt>` checkout in the runner's `_work` folder, and a mate that stopped early may leave a `kiro-worktree-N` or `kiro-review-N` worktree beside it. They are small; delete old ones now and then.
+Each run leaves a `trusted-main-<run>-<attempt>` checkout in the runner's `_work` folder, and an agent that stopped early may leave a `kiro-worktree-N` or `kiro-review-N` worktree beside it. They are small; delete old ones now and then.
 
 ## 1.5 Optional hardening
 

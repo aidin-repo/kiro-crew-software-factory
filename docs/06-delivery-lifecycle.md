@@ -18,16 +18,16 @@ flowchart LR
     A["delivery-auditor<br/>patrol, liveness only"] -.-> M
 ```
 
-## Mates
+## Agents
 
-| Mate | Trigger | Does | Hands off with |
+| Agent (template) | Trigger | Does | Hands off with |
 |---|---|---|---|
 | delivery-planner | `kiro-plan`, `kiro-deliver` on an issue | Posts one AIDLC spec comment with a ```` ```files ```` block | `kiro-approved`, or `kiro-needs-owner` when it must not self-approve |
 | delivery-implementer | `kiro-approved` on an issue; `kiro-changes-requested` on a PR | Fresh worktree, builds inside the files block, opens or updates the PR | `kiro-review` on the PR |
 | delivery-reviewer | `kiro-review` on a PR | Independent review: tests, build, scope, spec hash. One `VERDICT:` review | `kiro-ready` or `kiro-changes-requested` |
-| pr-gate (script) | `kiro-ready` on a PR | Deterministic: head SHA reviewed, CI green, files in scope, rounds <= 3, spec hash | `kiro-ready-to-merge` or `kiro-parked` |
+| pr-gate (script, no model) | `kiro-ready` on a PR | Deterministic: head SHA reviewed, CI green, files in scope, rounds <= 3, spec hash | `kiro-ready-to-merge` or `kiro-parked` |
 | delivery-scribe | PR merged into default branch | Docs-only PR | nothing |
-| delivery-auditor | timer | Lists stuck labels and failed runs | nothing (reports only) |
+| delivery-auditor (as the `auditor` mate) | timer | Lists stuck labels and failed runs | nothing (reports only) |
 | github-worker | `kiro-task` on an issue | Fast lane, no spec, no review | PR |
 
 Each role is its own webhook source on the Kiro Crew Webhooks page, routed to its own
@@ -89,7 +89,7 @@ New to this? [Doc 07](07-quickstart-checklist.md) is the same material as one or
 
    `KIROCREW_WEBHOOK_TOKEN` and `KIROCREW_WEBHOOK_SIGNING_SECRET` stay as the planner's.
    Every agent needs its own source: a source's destination is fixed, so a job that
-   borrows another mate's token runs as that mate and inherits its rules (a scribe run
+   borrows another source's token runs as that template and inherits its rules (a scribe run
    on the planner's token refuses to open the docs PR, because the planner may not push).
 
 6. Optional: arm the auditor. Open the `auditor` mate from the Mates page and ask it to
@@ -97,7 +97,7 @@ New to this? [Doc 07](07-quickstart-checklist.md) is the same material as one or
 
 ## Watching a run
 
-You do not need a mate's dashboard. The labels are the status:
+You do not need any dashboard. The labels are the status:
 
 | Want to know | Look at |
 |---|---|
@@ -113,7 +113,7 @@ You do not need a mate's dashboard. The labels are the status:
 
 - Every job re-validates the event in `dispatch_kiro_event.py`: the owner wrote the
   issue, the owner applied the label, the PR is on `kiro/issue-N` in this repository.
-- Mates read the spec from the owner's own comment and verify its SHA-256 from the PR
+- Agents read the spec from the owner's own comment and verify its SHA-256 from the PR
   body. Issue bodies, other comments and diffs are untrusted data.
 - The gate is the only job with a write token, and it never checks out PR code. It requires at least one CI check run on the PR head unless `KIRO_GATE_REQUIRE_CI` is `false` on the `pr-gate` job.
 - The dispatcher posts to `127.0.0.1:5476` unless `KIROCREW_WEBHOOK_URL` is set in the job's `env:`; any non-loopback address is refused.
@@ -125,7 +125,7 @@ You do not need a mate's dashboard. The labels are the status:
 
 Everything runs on the machine that hosts the self-hosted runner and the Kiro Crew
 gateway: the Actions jobs (which only validate the event and POST a signed webhook to
-`127.0.0.1`), the mates, their worktrees, tests and git pushes. GitHub stores issues,
+`127.0.0.1`), the agents, their worktrees, tests and git pushes. GitHub stores issues,
 labels, branches and PRs and fires the events; the project's own `ci.yml` may run on
 GitHub-hosted runners and the gate reads its results through the API. If the machine is
 off, labels wait in the Actions queue until it is back.

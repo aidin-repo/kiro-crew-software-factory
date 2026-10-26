@@ -16,7 +16,7 @@ From a normal terminal (an agent session cannot write to `~/.kiro/agents`):
 scripts/install-agent.sh
 ```
 
-It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the mate-creation commands for the next step.
+It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the next steps.
 
 | Template | One job |
 |---|---|
@@ -67,16 +67,16 @@ How the dispatcher authenticates (so you can debug it):
 
 ## 2.5 The approval policy in unattended turns
 
-A webhook turn is **unattended**: nobody can approve a tool call, so the turn runs with whatever approval policy the gateway was started with, not the mate's own approval mode.
+A webhook turn is **unattended**: nobody can approve a tool call, so the turn runs with whatever approval policy the gateway was started with.
 
-The templates auto-approve `shell`, `read` and `tool_search` (the implementer also `write`), and in testing the mates read code, edited files, ran `npm ci --ignore-scripts`, vitest, eslint and builds, committed, pushed, labelled, reviewed and opened PRs under that policy. Two kinds of command were refused by the host and are worth knowing:
+The templates auto-approve `shell`, `read` and `tool_search` (the implementer also `write`), and in testing the agents read code, edited files, ran `npm ci --ignore-scripts`, vitest, eslint and builds, committed, pushed, labelled, reviewed and opened PRs under that policy. Two kinds of command were refused by the host and are worth knowing:
 
-- **Shell patterns**: redirects, pipes into interpreters, `$(...)`, backgrounding and `&&` chains. The templates tell the mates to run plain commands and read the tool output instead.
+- **Shell patterns**: redirects, pipes into interpreters, `$(...)`, backgrounding and `&&` chains. The templates tell the agents to run plain commands and read the tool output instead.
 - **Environment switches**: changing Node version through nvm, and `npm ci` with lifecycle scripts. The reviewer falls back to the head commit's CI check runs when this happens and says so in its review; the gate re-verifies CI independently, so nothing is skipped.
 
-If a mate reports a denied tool, read its notification for the exact command, then prefer a narrow fix (add that tool to the mate's auto-approved list, or an approval rule for that command) over a permissive gateway-wide policy.
+If an agent reports a denied tool, read its notification for the exact command, then prefer a narrow fix (add that tool to the template's auto-approved list, or an approval rule for that command) over a permissive gateway-wide policy.
 
-## 2.6 What a mate does and does not keep
+## 2.6 What a webhook run does and does not keep
 
 - **Its prompt and tools** come from the template file in `~/.kiro/agents/`, read on every run. Edit the file and the next run uses it. The Webhooks Activity list shows which source, and so which template, ran each session.
 - **Each run is an ephemeral session**, destroyed afterwards. Nothing carries over between hops except what is on GitHub: the spec comment, the PR body with its spec URL and hash, the labels, the review.
@@ -87,11 +87,11 @@ If a mate reports a denied tool, read its notification for the exact command, th
 
 - Delivery is fire-and-forget: HTTP 200 means *accepted*, not *succeeded*. Watch the labels or the Activity list.
 - Limits: 6 concurrent runs and a 256 KiB body. The dispatcher asks for a 1800 s timeout; the gateway default is 599 s and the maximum is 3593 s.
-- The same `sessionKey` cannot run twice at once (`409 session_busy`). The key includes the GitHub run id and attempt, so re-running a job gets a new key. The workflow's checkout path includes the attempt too, so a re-run never cleans the folder an earlier run's mate is still using.
-- Each job's `concurrency` group is per issue or per PR, and only covers the dispatch job, which ends within seconds. Labelling the same issue twice quickly can start two mates; the second stops at the existing branch.
-- Labels written by the gate with `github.token` do not re-trigger the workflow, so `kiro-ready-to-merge` and `kiro-parked` are terminal. Labels written by mates through your `gh` login do trigger it; that is how the hops chain.
+- The same `sessionKey` cannot run twice at once (`409 session_busy`). The key includes the GitHub run id and attempt, so re-running a job gets a new key. The workflow's checkout path includes the attempt too, so a re-run never cleans the folder an earlier run's agent is still using.
+- Each job's `concurrency` group is per issue or per PR, and only covers the dispatch job, which ends within seconds. Labelling the same issue twice quickly can start two agents; the second stops at the existing branch.
+- Labels written by the gate with `github.token` do not re-trigger the workflow, so `kiro-ready-to-merge` and `kiro-parked` are terminal. Labels written by agents through your `gh` login do trigger it; that is how the hops chain.
 - Each run leaves a `trusted-main-...` checkout in the runner's `_work` folder. Delete old ones now and then.
-- To stop all inbound work without deleting anything, use the kill switch on the Webhooks page. To stop one mate, pause its source.
+- To stop all inbound work without deleting anything, use the kill switch on the Webhooks page. To stop one role, pause its source.
 - Keep the gateway bound to loopback. Do not expose port 5476 to the network.
 
 ## 2.8 Optional: arm the auditor
@@ -100,7 +100,7 @@ The auditor is the one role that polls, and the one that benefits from a mate (s
 
 ## 2.9 Quick manual test of the endpoint (optional)
 
-Use a throwaway source, never a production one. This sends a real message to the mate the source routes to.
+Use a throwaway source, never a production one. This sends a real message to the agent the source routes to.
 
 ```bash
 TS=$(date +%s)
