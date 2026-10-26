@@ -2,7 +2,7 @@
 # One-time GitHub activation for a repository:
 #   1. creates (or updates) every lifecycle label
 #   2. stores the Kiro Crew webhook credentials as repository Actions secrets,
-#      one token + signing secret pair per mate
+#      one token + signing secret pair per template
 #
 # Usage:
 #   export KIROCREW_WEBHOOK_TOKEN='...'                  # planner source (also used by kiro-plan)
@@ -69,7 +69,7 @@ read_secret() {
   echo "  set $name"
 }
 
-echo "Storing Actions secrets on $REPO (one webhook source per mate)"
+echo "Storing Actions secrets on $REPO (one webhook source per template)"
 read_secret KIROCREW_WEBHOOK_TOKEN
 read_secret KIROCREW_WEBHOOK_SIGNING_SECRET
 read_secret KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER

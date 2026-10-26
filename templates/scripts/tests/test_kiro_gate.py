@@ -164,6 +164,20 @@ def test_decide_parks_on_failed_or_pending_or_missing_checks():
     assert passed is False and "CI: no check runs" in reasons[0]
 
 
+def test_no_ci_blocks_by_default_and_warns_when_not_required():
+    passed, reasons = gate.decide(facts(check_runs=[]))
+    assert passed is False and "KIRO_GATE_REQUIRE_CI=false" in reasons[0]
+    passed, reasons = gate.decide(facts(check_runs=[], require_ci=False))
+    assert passed is True and reasons[0].endswith("(warning)")
+
+
+def test_require_ci_reads_the_environment():
+    assert gate.require_ci({}) is True
+    assert gate.require_ci({"KIRO_GATE_REQUIRE_CI": "true"}) is True
+    for value in ("false", "0", "no", "off", " False "):
+        assert gate.require_ci({"KIRO_GATE_REQUIRE_CI": value}) is False
+
+
 def test_decide_ignores_the_lifecycle_workflows_own_check_runs():
     # Regression: PR #70 parked with "CI: pr-gate is pending" because the gate counted
     # its own in-progress job as a failing CI check.

@@ -1,66 +1,89 @@
 # 0. How it works
 
-You write a GitHub issue and add one label. A Kiro Crew crewmate called `github-worker`, running on your own machine, finds the code, makes the change and opens a pull request. You read it and decide whether to merge.
+You write a GitHub issue and add one label. Five small Kiro Crew agents, running on your own machine, take it from there: one writes a specification, one implements it, one reviews it independently, a script checks the result, and one updates the docs after you merge. Each hands off to the next through a GitHub label. You read the final pull request and decide whether to merge.
 
 ## Using it
 
-**1. Write the issue.** Describe the behaviour you want the way you would for a colleague. You can name the files and tests, or let the crewmate find them. It treats the issue as the specification, so a clear issue gives a small, correct PR. A vague one gives a guess. Asking it to list the files it found and changed in the PR makes the result easy to check.
+**1. Write the issue.** Describe the behaviour you want the way you would for a colleague: what, why, and how you will know it is done. You do not need to name files. The planner reads the code and writes the specification; a clear issue gives a precise spec, and a vague one gets you a `kiro-needs-owner` label with questions instead of a guess.
 
 ```text
-Title: Add a brown color theme
+Title: Show a word count under the chat input
 
-The website has selectable color themes (blue, green, pink). Add a fourth theme called brown.
+## What
+Show a small muted word count beneath the chat input, formatted as "N words"
+(singular "1 word"), updating as the user types.
 
-- A brown option appears in the theme picker and works like the others.
-- It changes the accent colors in light and dark mode, and is remembered after reload.
-- Blue stays the default.
+## Why
+Users drafting longer messages want to know how long their message is before sending.
 
-Find where the themes are defined and listed, follow the same pattern, update the tests,
-and list the files you changed in the PR description. Do not touch unrelated code.
+## Acceptance
+- A word count appears below the chat input and updates on every keystroke.
+- Words are separated by whitespace; extra whitespace does not count.
+- Empty input shows "0 words"; one word shows "1 word".
+- Existing tests pass; new tests cover 0, 1, many words and extra whitespace.
+- No change to the backend API or message data shape.
 ```
 
-**2. Add the `kiro-task` label.** This is the "go" signal. Only the repository owner's label counts. A label from anyone else is refused.
+**2. Add the `kiro-deliver` label.** This is the "go" signal. Only the repository owner's label counts; a label from anyone else is refused. You can add it when you create the issue.
 
-**3. Wait a few minutes.** The crewmate creates a branch `kiro/issue-<number>`, makes the change, runs the tests, and opens a pull request that links back to the issue. In testing this took one to two and a half minutes. When it finishes you get a dashboard notification titled `Webhook: GitHub <repo>` with its report.
+**3. Wait a few minutes.** Watch the labels move: `kiro-approved` on the issue within about a minute, then a pull request on `kiro/issue-<number>` labelled `kiro-review`, then `kiro-ready`, then `kiro-ready-to-merge`. In testing the whole run took 6 to 8 minutes. Each agent's report arrives as a dashboard notification titled `Webhook: GitHub <repo>`.
 
-**4. Decide.** CI runs on the PR as usual. Review the diff and try the change yourself. Merge it if it is right, or close it and refine the issue. The crewmate never merges or deploys.
+**4. Decide.** Open the PR. The reviewer's `VERDICT:` review and the gate's "Delivery gate: PASS" comment tell you what was checked. CI has run. Read the diff, try the change, and merge it if it is right. Nothing merges on its own. After you merge, the scribe opens a docs-only PR if the change needs documenting.
 
 ## What happens behind the scenes
 
 ```mermaid
 flowchart TB
-  label["You add the label kiro-task<br/>to an issue"] --> event["GitHub sends an<br/>issues: labeled event"]
-  event --> job
-
-  subgraph machine["Your machine"]
+  I["You add kiro-deliver<br/>to an issue"] --> E1["GitHub: issues labeled"]
+  subgraph machine["Your machine (runner + Kiro Crew gateway)"]
     direction TB
-    job["Actions job issue-task<br/>on your kirocrew runner<br/>default branch checkout"]
-    dispatch["dispatch_kiro_event.py<br/>owner check, issue text wrapped as data"]
-    hook["Kiro Crew webhook source<br/>127.0.0.1:5476/api/hooks/agent"]
-    crewmate["github-worker crewmate<br/>branch kiro/issue-N<br/>find code, edit, test, commit, push"]
-    job --> dispatch -->|"signed POST"| hook -->|"routes to"| crewmate
+    E1 --> J1["Actions job issue-deliver<br/>dispatch_kiro_event.py validates,<br/>signed POST to 127.0.0.1"]
+    J1 --> P["planner<br/>reads code, writes AIDLC spec comment<br/>applies kiro-approved"]
+    P --> J2["Actions job issue-implement"]
+    J2 --> IMP["implementer<br/>fresh worktree, builds inside the spec's files block,<br/>opens PR, applies kiro-review"]
+    IMP --> J3["Actions job pr-review-round"]
+    J3 --> R["reviewer<br/>fresh session, never reads the implementer<br/>tests + build, VERDICT review,<br/>applies kiro-ready or kiro-changes-requested"]
+    R -->|kiro-changes-requested| J2
+    R -->|kiro-ready| G["Actions job pr-gate<br/>kiro_gate.py (no model):<br/>SHA reviewed, CI green, scope, hash, rounds"]
   end
-
-  crewmate -->|"gh pr create"| pr["Pull request<br/>Closes #35;N"]
-  pr --> ci["CI checks"]
-  ci --> decide["You review,<br/>then merge or close"]
+  G -->|kiro-ready-to-merge| M["You review and merge"]
+  G -.->|kiro-parked| M
+  M -->|merged| S["scribe<br/>docs-only PR"]
 ```
 
 In words:
-1. Adding the label sends an event from GitHub to a small workflow in your repo.
-2. The workflow runs on your machine, using a GitHub Actions runner you installed. It checks out the repo's main branch, never code from a PR.
-3. A short script checks the event. It confirms the right repository and label and that the owner both wrote the issue and applied the label. It removes hidden text (HTML comments, invisible characters), then passes the issue text to Kiro Crew as data, not as commands, in a signed request to your local Kiro Crew.
-4. Kiro Crew's webhook source routes the request to the `github-worker` crewmate. It starts a fresh session for that one task, does the work with the crewmate's instructions, and closes the session when it is done.
 
-Everything runs on your machine with your GitHub login, so the PR and commits show your account, not the crewmate's name.
+1. Adding a label sends an event from GitHub to a small workflow in your repo. Every label in the lifecycle has one job in that workflow.
+2. The job runs on your machine, on a GitHub Actions runner you installed. It checks out the repo's default branch, never PR code, and runs a short script.
+3. The script checks the event: right repository, right label, the owner wrote the issue and applied the label, the issue is open, and for PR labels, the owner opened the PR and it is on a `kiro/issue-N` branch of this repository. It strips hidden text (HTML comments, invisible characters) and passes the GitHub text to Kiro Crew as data, not as commands, in a signed request to the local gateway.
+4. The gateway routes the request to the agent template that owns this label. Each role has its own webhook source, so each runs with only its own rules. It starts a fresh session for that one hop, does the work, writes the next label, and the session ends.
+5. The next label fires the next job. No agent waits for another; nothing polls. The only timer is the optional auditor, which reports a label that has not moved.
+6. The gate job is different: it runs a Python script with a GitHub token instead of an agent. It reads the PR through the API, never checks out PR code, and writes one comment and one label.
+
+Everything runs on your machine with your GitHub login, so the PR, the review and the commits show your account.
+
+## The labels
+
+| Label | On | Means |
+|---|---|---|
+| `kiro-plan` | issue | Write a spec only; I will approve by hand |
+| `kiro-deliver` | issue | Write a spec and approve it for me |
+| `kiro-approved` | issue | Spec approved; implementer starts |
+| `kiro-needs-owner` | issue | Planner held: too vague, or touches infra, credentials, auth or data deletion. Read the spec, then apply `kiro-approved` yourself |
+| `kiro-task` | issue | Fast lane: implement the issue text directly, no spec, no review, no gate |
+| `kiro-review` | PR | Waiting for the reviewer |
+| `kiro-changes-requested` | PR | Reviewer found problems; implementer fixes (at most 3 rounds) |
+| `kiro-ready` | PR | Reviewer approved; gate runs |
+| `kiro-ready-to-merge` | PR | Gate passed; you may merge |
+| `kiro-parked` | PR | Gate failed or round limit hit; you decide |
 
 ## Things to know
 
-- **The machine must be on** and the runner running, or the task waits in GitHub until it is back. To stop depending on your laptop, use a remote Kiro Crew machine: see [05](05-run-on-a-remote-machine.md).
-- **One task per issue.** Labelling the same issue again stops early if its branch already exists. Open a new issue for new work.
-- **You can't steer a run.** Each run is unattended, and comments on the PR don't reach the crewmate. To change the result, edit the PR yourself or open a new issue.
-- **Where to watch it.** The notification and the Webhooks page's Activity list show each run. The crewmate's own dashboard stays empty for webhook runs.
-- **It stays in scope.** The crewmate refuses requests in the issue to run commands, change workflows, touch credentials or infrastructure, or widen the task. It explains why instead.
+- **The machine must be on** and the runner running, or the label waits in GitHub until it is back. To stop depending on your laptop, use a remote Kiro Crew machine: see [05](05-run-on-a-remote-machine.md).
+- **One branch per issue.** `kiro/issue-N` is fixed. A second implementation of the same issue stops rather than force-pushing. Open a new issue, or delete the branch.
+- **You can't steer a run.** Each hop is unattended and ephemeral. PR comments do not reach an agent; labels do. To get another review round after you edit the branch yourself, remove and re-add `kiro-review`.
+- **Where to watch it.** The labels on the issue and PR are the status. The `VERDICT:` review and the gate comment are the record. Each agent's report is a dashboard notification; the Webhooks page's Activity list has the full transcript. Webhook runs appear on no mate's dashboard; they are not tied to one.
+- **It stays in scope.** The spec lists the files that may change; the implementer stays inside them and the gate parks any PR that does not. Agents refuse instructions in the issue to run commands, change workflows, or touch credentials or infrastructure.
 - **Use a private repository you own.** The setup is built for a single owner on a personal machine.
 
-Setup: [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). Testing: [03 Testing](03-testing.md). Not your laptop: [05 Run on a remote machine](05-run-on-a-remote-machine.md).
+Setup from scratch: [07 Quick start checklist](07-quickstart-checklist.md). Reference: [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). The full lifecycle: [06](06-delivery-lifecycle.md). Testing: [03 Testing](03-testing.md). Not your laptop: [05 Run on a remote machine](05-run-on-a-remote-machine.md).

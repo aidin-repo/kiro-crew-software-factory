@@ -1,7 +1,7 @@
 # Installed to .github/workflows/kiro-crew-events.yml in the target repository.
 #
 # The delivery lifecycle is a label state machine on GitHub. Every hop is an event, no
-# mate polls, and one mate does one job. Each mate is its own Kiro Crew webhook source
+# mate polls, and one mate does one job. Each agent is its own Kiro Crew webhook source
 # (its own token + signing secret) so the gateway maps it to its own agent and memory.
 #
 #   issues:labeled  kiro-plan                -> issue-plan      : delivery-planner posts an AIDLC spec (read-only)
@@ -16,7 +16,7 @@
 # Every job runs on YOUR machine (self-hosted runner labelled "kirocrew") and talks to the
 # Kiro Crew gateway on 127.0.0.1. Use this only in PRIVATE repositories you own.
 #
-# Secrets (one source per mate on the Kiro Crew Webhooks page):
+# Secrets (one source per template on the Kiro Crew Webhooks page):
 #   KIROCREW_WEBHOOK_TOKEN / KIROCREW_WEBHOOK_SIGNING_SECRET                     -> delivery-planner
 #   KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER / KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER -> delivery-implementer
 #   KIROCREW_WEBHOOK_TOKEN_REVIEWER / KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER       -> delivery-reviewer
@@ -217,6 +217,9 @@ jobs:
           KIRO_MODE: pr-gate
           KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           GITHUB_TOKEN: ${{ github.token }}
+          # The gate requires at least one CI check run on the PR head. A repository with
+          # no CI workflow would park every PR; set this to "false" to make that a warning.
+          KIRO_GATE_REQUIRE_CI: "true"
         run: python3 "$KIRO_WORKSPACE/.github/scripts/kiro_gate.py"
 
   pr-merged:
