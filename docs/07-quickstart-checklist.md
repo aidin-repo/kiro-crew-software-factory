@@ -59,7 +59,7 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
 
 - [ ] Open the **Mates** page in the dashboard, or the mate picker at the top of a chat. The six appear in the roster, each showing its template name underneath (**Show the full roster** if the picker is cut off).
 
-  > Screenshot needed: `docs/images/03-mates-roster.png` (the Mates page or picker showing the six delivery mates)
+  ![The mate picker at the top of a chat, each mate with its template name underneath](images/03-mates-picker.png)
 
 ## 4. Kiro Crew: one webhook source per mate
 
