@@ -160,7 +160,9 @@ To keep it running after you close the terminal: `./svc.sh install && ./svc.sh s
 - [ ] Write an issue with **What**, **Why** and **Acceptance** sections (doc 00 has an example). Add the `kiro-deliver` label.
 - [ ] Watch the labels. When the PR reads `kiro-ready-to-merge`, open it, read the `VERDICT:` review and the gate comment, read the diff, merge.
 
-  > Screenshot needed: `docs/images/08-pr-ready.png` (a PR with the kiro-ready-to-merge label, the VERDICT review and the gate comment visible)
+  ![The reviewer's comment review: VERDICT approve, HEAD REVIEWED, then numbered findings](images/08a-pr-verdict.png)
+
+  ![The gate's comment, Delivery gate PASS, and the label change to kiro-ready-to-merge](images/08b-pr-gate.png)
 
 - [ ] After the merge, the scribe may open a docs PR on `kiro/docs-pr-N`. Merge or close it.
 
