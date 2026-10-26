@@ -8,11 +8,11 @@ Everything GitHub needs before a label can start work. The scripts in `scripts/`
 - `gh` logged in as that owner: `gh auth login`, then `gh auth status`.
 - The dispatcher's owner check compares both the label sender and the issue author with the repository owner, so you must write the issue yourself as well as label it. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` and `labelled_pr_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is not tested here.
 - Admin rights on the repo (to create secrets and register a runner).
-- The mates and webhook sources from [doc 02](02-kiro-crew-setup.md), because this step stores their tokens.
+- The templates and webhook sources from [doc 02](02-kiro-crew-setup.md), because this step stores their tokens.
 
 ## 1.2 Create the labels and store the secrets
 
-One webhook source per mate means one token and signing secret pair per mate. Have the five pairs from doc 02 ready (you can skip the scribe and worker pairs if you do not want those hops).
+One webhook source per template means one token and signing secret pair per template. Have the five pairs from doc 02 ready (you can skip the scribe and worker pairs if you do not want those hops).
 
 ```bash
 export KIROCREW_WEBHOOK_TOKEN='planner token'
@@ -59,7 +59,7 @@ Which job uses which secret:
 | `issue-task` | `kiro-task` | `..._WORKER` | github-worker |
 | `pr-gate` | `kiro-ready` | none: uses `github.token` | the gate script |
 
-A source's destination is fixed on the Kiro Crew Webhooks page, so a job that borrows another mate's token runs *as that mate* and inherits its rules. That is why each mate has its own pair: the scribe on the planner's token refused to open a docs PR because the planner may not push.
+A source's destination is fixed on the Kiro Crew Webhooks page, so a job that borrows another source's token runs *as that template* and inherits its rules. That is why each has its own pair: the scribe on the planner's token refused to open a docs PR because the planner may not push.
 
 Rules for the secrets: never put them in a file in the repo, never echo them, rotate by minting a new webhook source (doc 02) and re-running `setup-github.sh`.
 

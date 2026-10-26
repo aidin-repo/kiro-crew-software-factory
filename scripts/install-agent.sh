@@ -39,18 +39,11 @@ done
 
 cat <<'EOF'
 
-These are plain agent templates. Each pipeline stage runs as a MATE bound to one of them,
-with its own memory, and each mate has its own webhook source. Create the mates once
-(names must differ from the template names):
+Next: on the Kiro Crew dashboard, Settings > Webhooks > New, create one signed source per
+template that receives GitHub events, picking the template as the Agent:
 
-  kirocrew agent create --name planner     --kiro-agent delivery-planner     --display-name "Delivery Planner"
-  kirocrew agent create --name implementer --kiro-agent delivery-implementer --display-name "Delivery Implementer"
-  kirocrew agent create --name reviewer    --kiro-agent delivery-reviewer    --display-name "Delivery Reviewer"
-  kirocrew agent create --name scribe      --kiro-agent delivery-scribe      --display-name "Delivery Scribe"
-  kirocrew agent create --name auditor     --kiro-agent delivery-auditor     --display-name "Delivery Auditor"
-  kirocrew agent create --name worker      --kiro-agent github-worker        --display-name "GitHub Worker"
+  delivery-planner, delivery-implementer, delivery-reviewer, delivery-scribe, github-worker
 
-A mate copies its template when it is created. After you change a template, recreate the
-mate (kirocrew agent delete NAME, then create again) so it picks up the new prompt; the
-webhook source keeps routing to the same name. See docs/06-delivery-lifecycle.md.
+Webhook runs read these template files on every run; edit a file and the next run uses it.
+Mates are optional (only for a standing chat, e.g. the auditor). See docs/07-quickstart-checklist.md.
 EOF

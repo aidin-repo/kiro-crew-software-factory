@@ -16,7 +16,7 @@
 # Every job runs on YOUR machine (self-hosted runner labelled "kirocrew") and talks to the
 # Kiro Crew gateway on 127.0.0.1. Use this only in PRIVATE repositories you own.
 #
-# Secrets (one source per mate on the Kiro Crew Webhooks page):
+# Secrets (one source per template on the Kiro Crew Webhooks page):
 #   KIROCREW_WEBHOOK_TOKEN / KIROCREW_WEBHOOK_SIGNING_SECRET                     -> delivery-planner
 #   KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER / KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER -> delivery-implementer
 #   KIROCREW_WEBHOOK_TOKEN_REVIEWER / KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER       -> delivery-reviewer

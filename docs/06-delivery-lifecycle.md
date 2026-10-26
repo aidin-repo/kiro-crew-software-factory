@@ -30,9 +30,10 @@ flowchart LR
 | delivery-auditor | timer | Lists stuck labels and failed runs | nothing (reports only) |
 | github-worker | `kiro-task` on an issue | Fast lane, no spec, no review | PR |
 
-Each mate is its own webhook source on the Kiro Crew Webhooks page, so it runs as its
-own agent with its own memory. The reviewer therefore never shares state with the
-implementer.
+Each role is its own webhook source on the Kiro Crew Webhooks page, routed to its own
+template, so a job never runs with another role's rules. Each run is an ephemeral
+session; the reviewer never reads the implementer's session and judges only what is on
+GitHub.
 
 ## Labels
 
@@ -54,7 +55,7 @@ implementer.
 New to this? [Doc 07](07-quickstart-checklist.md) is the same material as one ordered checklist with prerequisites. The steps below assume Kiro Crew 0.11 or newer.
 
 1. Labels and secrets: `scripts/setup-github.sh OWNER/REPO` creates every label below
-   and prompts for one token + signing secret pair per mate. Or by hand:
+   and prompts for one token + signing secret pair per template. Or by hand:
 
    ```bash
    for l in kiro-plan kiro-deliver kiro-approved kiro-needs-owner kiro-task kiro-review kiro-changes-requested kiro-ready kiro-ready-to-merge kiro-parked; do
@@ -64,25 +65,14 @@ New to this? [Doc 07](07-quickstart-checklist.md) is the same material as one or
 
 2. Agent templates: `scripts/install-agent.sh` copies `templates/agent/*` into `~/.kiro/agents/`.
 
-3. Mates (so each runs on its own memory):
-
-   ```bash
-   kirocrew agent create --name planner     --kiro-agent delivery-planner     --display-name "Delivery Planner"
-   kirocrew agent create --name implementer --kiro-agent delivery-implementer --display-name "Delivery Implementer"
-   kirocrew agent create --name reviewer    --kiro-agent delivery-reviewer    --display-name "Delivery Reviewer"
-   kirocrew agent create --name scribe      --kiro-agent delivery-scribe      --display-name "Delivery Scribe"
-   kirocrew agent create --name auditor     --kiro-agent delivery-auditor     --display-name "Delivery Auditor"
-   kirocrew agent create --name worker      --kiro-agent github-worker        --display-name "GitHub Worker"
-
-   A mate's name must differ from its template's name (Kiro Crew 0.11 refuses the
-   collision). A mate copies its template at creation; after editing a template,
-   delete and recreate the mate so it picks up the change. The webhook source keeps
-   routing to the same name.
-   ```
+3. Mates are optional. Webhook sources route to templates and each run reads the
+   template file, so the pipeline needs none. Create one only for a standing chat, for
+   example `kirocrew agent create --name auditor --kiro-agent delivery-auditor`. A
+   mate's name must differ from its template's name.
 
 4. Webhook sources, on the Kiro Crew dashboard Webhooks page: create one source per
-   mate (planner, implementer, reviewer, scribe, worker), each with signing required,
-   destination the matching mate. Copy each token and signing secret once.
+   template (delivery-planner, delivery-implementer, delivery-reviewer, delivery-scribe,
+   github-worker), each with signing required. Copy each token and signing secret once.
 
 5. Repository secrets:
 

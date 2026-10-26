@@ -11,7 +11,7 @@
 This project uses three of its features:
 
 - **Webhooks:** an authenticated endpoint that starts an agent when an outside event arrives. Here every event is a GitHub label.
-- **Mates (crewmates):** named agents with their own instructions, tools and memory. Here, five of them: planner, implementer, reviewer, scribe and auditor.
+- **Agent templates:** named agents with their own instructions and tools. Here, five roles: planner, implementer, reviewer, scribe and auditor, each a template file under `~/.kiro/agents/`.
 - **Host guardrails:** tool approval, denied commands, sandboxing and an audit log apply to what each mate does.
 
 ## Why a "software factory"
@@ -71,13 +71,13 @@ cd kiro-crew-software-factory
 scripts/install-agent.sh
 ```
 
-Then create the mates it prints (one per template; names must differ from the template names), and under **Settings → Webhooks** create one signed source per mate with **New**, picking the **mate** (not its template) as the Agent. Copy every token and signing secret when shown; they appear once.
+Then under **Settings → Webhooks** create one signed source per template with **New** (planner, implementer, reviewer, scribe, worker), picking the template as the Agent. Copy every token and signing secret when shown; they appear once.
 
 **2. GitHub side.** Replace `OWNER/REPO` and `~/code/REPO`:
 
 ```bash
 gh auth setup-git
-scripts/setup-github.sh OWNER/REPO       # labels + one secret pair per mate (prompts for each)
+scripts/setup-github.sh OWNER/REPO       # labels + one secret pair per template (prompts for each)
 scripts/install-into-repo.sh ~/code/REPO # workflow, dispatcher, gate, tests, mate templates
 scripts/install-runner.sh OWNER/REPO
 ```
@@ -107,7 +107,7 @@ An issue's text can influence a program that has shell access to your machine, s
 - **Owner-gated at every hop.** The dispatcher re-checks each event: the owner wrote the issue, the owner applied the label, the PR is on `kiro/issue-N` in this repository and still open. A collaborator's label starts nothing.
 - **Issue text is data.** It is base64-encoded into a marked untrusted block, after hidden HTML comments and invisible characters are removed, so the agent reads what you read. Mates never run commands copied from it and refuse to widen scope or touch workflows, credentials, deployment or infrastructure.
 - **The spec is the contract.** The implementer builds only the files the owner-approved spec lists; the PR body carries the spec's URL and SHA-256; the reviewer and the gate both verify it.
-- **One mate, one job, one token.** Each stage runs as its own mate on its own memory with its own webhook source, so the reviewer never shares state with the implementer and a stage cannot borrow another's permissions.
+- **One role, one job, one token.** Each stage runs as its own template with its own webhook source in its own ephemeral session, so a stage cannot borrow another's permissions and the reviewer never reads the implementer's session.
 - **Trusted code only.** Jobs check out the default branch. The gate never checks out PR code; it reads the GitHub API.
 - **Signed and loopback.** The dispatcher sends a bearer token plus an HMAC signature, refuses any non-loopback webhook URL, ignores proxy settings and never follows a redirect.
 - **No merge, no deploy.** `kiro-ready-to-merge` is the pipeline's last word. Protect the default branch with a ruleset that requires a pull request and does not let admins bypass it (docs/01, section 1.5).

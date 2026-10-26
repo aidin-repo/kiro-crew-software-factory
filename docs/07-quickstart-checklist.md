@@ -50,7 +50,7 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
 
   A mate's name must differ from its template's name, or `agent create` says "a template is already named X".
 
-## 4. Kiro Crew: one webhook source per mate
+## 4. Kiro Crew: one webhook source per template
 
 Repeat for each row. Have a terminal open beside the dashboard: each source shows its two values once, and you store them straight into GitHub.
 
