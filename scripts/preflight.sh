@@ -47,11 +47,14 @@ else
 fi
 
 echo "Repository configuration"
-if gh label list --repo "$REPO" --limit 200 --json name --jq '.[].name' 2>/dev/null | grep -qx 'kiro-task'; then
-  pass "label kiro-task exists"
-else
-  fail "label kiro-task missing (run scripts/setup-github.sh)"
-fi
+LABELS="$(gh label list --repo "$REPO" --limit 200 --json name --jq '.[].name' 2>/dev/null || true)"
+for label in kiro-plan kiro-deliver kiro-approved kiro-needs-owner kiro-task kiro-review kiro-changes-requested kiro-ready kiro-ready-to-merge kiro-parked; do
+  if grep -qx "$label" <<<"$LABELS"; then
+    pass "label $label exists"
+  else
+    fail "label $label missing (run scripts/setup-github.sh)"
+  fi
+done
 
 SECRETS="$(gh secret list --repo "$REPO" --json name --jq '.[].name' 2>/dev/null)"
 for name in KIROCREW_WEBHOOK_TOKEN KIROCREW_WEBHOOK_SIGNING_SECRET; do
@@ -83,11 +86,13 @@ if [[ -n "$CODE" && "$CODE" != "000" ]]; then
 else
   fail "nothing answers on 127.0.0.1:5476 (is the Kiro Crew gateway running?)"
 fi
-if [[ -f "$HOME/.kiro/agents/github-worker.json" ]]; then
-  pass "agent template ~/.kiro/agents/github-worker.json present"
-else
-  warn "agent template ~/.kiro/agents/github-worker.json not found (run scripts/install-agent.sh)"
-fi
+for template in delivery-planner.json delivery-implementer.json delivery-reviewer.json delivery-scribe.json delivery-auditor.md github-worker.json; do
+  if [[ -f "$HOME/.kiro/agents/$template" ]]; then
+    pass "agent template ~/.kiro/agents/$template present"
+  else
+    warn "agent template ~/.kiro/agents/$template not found (run scripts/install-agent.sh)"
+  fi
+done
 
 echo
 if [[ "$FAILS" -eq 0 ]]; then
