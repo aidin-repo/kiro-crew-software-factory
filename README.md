@@ -71,7 +71,7 @@ cd kiro-crew-software-factory
 scripts/install-agent.sh
 ```
 
-Then create the mates it prints (one per template; names must differ from the template names), and on the dashboard **Webhooks** page create one signed source per mate, each routed to its mate. Copy every token and signing secret when shown; they appear once.
+Then create the mates it prints (one per template; names must differ from the template names), and under **Settings → Webhooks** create one signed source per mate with **New**, picking the **mate** (not its template) as the Agent. Copy every token and signing secret when shown; they appear once.
 
 **2. GitHub side.** Replace `OWNER/REPO` and `~/code/REPO`:
 

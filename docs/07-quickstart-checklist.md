@@ -20,11 +20,11 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
   cd kiro-crew-software-factory
   ```
 
-## 1. Kiro Crew: previews
+## 1. Kiro Crew: find the two pages
 
-- [ ] Open the Kiro Crew dashboard. **Settings** → **Developer** → **Feature Previews**. Switch on **Mates** and **Webhooks**. Both rows appear in the left sidebar.
+- [ ] Open the Kiro Crew dashboard. **Mates** is in the left sidebar. **Webhooks** is under **Settings** → **System** (the version is printed at the bottom of the Settings list; it must read 0.11 or newer). If either is missing on an older build, switch it on under **Settings** → **Developer** → **Feature Previews**.
 
-  > Screenshot needed: `docs/images/01-feature-previews.png` (the Feature Previews card with Mates and Webhooks on)
+  ![Settings list with Webhooks under System and the version at the bottom](images/01-settings-webhooks.png)
 
 ## 2. Kiro Crew: install the six agent templates
 
@@ -57,15 +57,15 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
 
   Each of the six rows shows its template in the `KIRO_AGENT` column and its own memory store. If `agent create` says "a template is already named X", you used the template's name as the mate's name; pick a different one.
 
-- [ ] Open the **Mates** page in the dashboard. The six appear in the roster.
+- [ ] Open the **Mates** page in the dashboard, or the mate picker at the top of a chat. The six appear in the roster, each showing its template name underneath (**Show the full roster** if the picker is cut off).
 
-  > Screenshot needed: `docs/images/03-mates-roster.png` (the Mates page listing the six)
+  > Screenshot needed: `docs/images/03-mates-roster.png` (the Mates page or picker showing the six delivery mates)
 
 ## 4. Kiro Crew: one webhook source per mate
 
 Repeat for each row. Have a terminal open beside the dashboard: each source shows its two values once, and you store them straight into GitHub.
 
-| # | Source label | Destination agent | Then run (paste token, Enter; paste signing secret, Enter) |
+| # | Source name | Agent (pick the **mate**) | Then run (paste token, Enter; paste signing secret, Enter) |
 |---|---|---|---|
 | 4a | `GitHub REPO planner` | `planner` | `gh secret set KIROCREW_WEBHOOK_TOKEN --repo OWNER/REPO` then `gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET --repo OWNER/REPO` |
 | 4b | `GitHub REPO implementer` | `implementer` | `..._TOKEN_IMPLEMENTER`, `..._SIGNING_SECRET_IMPLEMENTER` |
@@ -75,13 +75,15 @@ Repeat for each row. Have a terminal open beside the dashboard: each source show
 
 For each:
 
-- [ ] Dashboard **Webhooks** → **Add source**. Enter the label, pick the destination **mate** (not the `delivery-...` template), leave **Require signature** on, **Create**.
+- [ ] **Settings** → **Webhooks** → **New**. Type the **Source** name. In the **Agent** dropdown pick the **mate** (`implementer`, not the `delivery-implementer` template; the dropdown lists both). Leave **Require request signing** checked. Click **Generate token**.
 
-  > Screenshot needed: `docs/images/04a-add-source.png` (the Add source form filled in for the planner)
+  ![The New source form: source name, agent dropdown, require request signing, generate token](images/04a-new-source.png)
 
-- [ ] The panel shows **Token** and **Signing secret**. Run the two `gh secret set` commands from the table, pasting each value when prompted. Then close the panel.
+- [ ] A panel appears: **Copy both secrets now, they are shown once**, with the **bearer token** (`kc_whk_...`) and the **signing secret** (`kc_whs_...`). Run the two `gh secret set` commands from the table, pasting each value when prompted. Only then click **Dismiss, I have saved**.
 
-  > Screenshot needed: `docs/images/04b-source-created.png` (the one-time token/secret panel, values blurred)
+  ![The one-time panel showing the bearer token and signing secret](images/04b-source-created.png)
+
+- [ ] Check the new row in the left list reads `Agent: <mate name>` (for example `Agent: implementer`). If it reads the template name (`Agent: delivery-implementer`), the source will run on the shared template with the default memory instead of the mate: select the row, **Routing** → **Agent**, pick the mate. The token does not change.
 
 - [ ] After all five:
 
@@ -171,5 +173,6 @@ To keep it running after you close the terminal: `./svc.sh install && ./svc.sh s
 | `kiro-approved` but no PR after 10 min | Actions: `issue-implement` result. Dashboard notification: the implementer's report |
 | PR stuck at `kiro-review` after 10 min | Dashboard notification from the reviewer; re-add the label to retry |
 | PR has `kiro-parked` | The gate comment lists each failed check |
+| A mate ignores a prompt change you made | Its source routes to the template (`Agent: delivery-...`), not the mate; re-point it, or edit the template file directly |
 
 Full troubleshooting: [doc 04](04-lessons-and-troubleshooting.md). How each piece works: [doc 06](06-delivery-lifecycle.md).

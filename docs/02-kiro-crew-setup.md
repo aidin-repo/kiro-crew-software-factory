@@ -4,9 +4,9 @@ The Kiro Crew side: six agent templates, six mates built from them, and one inbo
 
 Do these in order: turn on the previews, install the templates, create the mates, create the webhook sources, store the secrets (doc 01), test. Requires Kiro Crew 0.11 or newer (`kirocrew --version`); older builds call mates "crewmates" and the `agent create` flags differ. [Doc 07](07-quickstart-checklist.md) has the same steps as a single checklist.
 
-## 2.1 Turn on the previews
+## 2.1 Find the two pages
 
-In Settings, Developer, Feature Previews, switch on **Mates** (called Crewmates in older builds) and **Webhooks**. The webhook endpoint exists either way, but the management pages are hidden until you do. Developer Mode is not required.
+In Kiro Crew 0.11, **Mates** is in the left sidebar and **Webhooks** is under **Settings** → **System**. The version is printed at the bottom of the Settings list. On an older build both are hidden behind **Settings** → **Developer** → **Feature Previews** (where Mates is called Crewmates). The webhook endpoint exists either way; only the page is hidden.
 
 ## 2.2 Install the agent templates
 
@@ -62,13 +62,15 @@ On the **Webhooks** page, add a source for each mate that receives GitHub events
 
 | Source label | Destination agent | Secret pair in GitHub |
 |---|---|---|
-| `GitHub <repo> planner` | `planner` | `KIROCREW_WEBHOOK_TOKEN`, `KIROCREW_WEBHOOK_SIGNING_SECRET` |
+| `GitHub <repo> planner` | `planner` (or `delivery-planner` if your mate carries that name) | `KIROCREW_WEBHOOK_TOKEN`, `KIROCREW_WEBHOOK_SIGNING_SECRET` |
 | `GitHub <repo> implementer` | `implementer` | `..._IMPLEMENTER` |
 | `GitHub <repo> reviewer` | `reviewer` | `..._REVIEWER` |
 | `GitHub <repo> scribe` | `scribe` | `..._SCRIBE` |
 | `GitHub <repo> worker` | `worker` | `..._WORKER` |
 
-For each: **Routing, Agent** is the mate (not the template), and **Require signature** is on (the default). The dialog shows the **bearer token** and the **signing secret** once. Copy both into the matching `gh secret set` prompts from doc 01 before you close it; lose them and you delete the source and create it again.
+For each: **Settings** → **Webhooks** → **New**. Type the **Source** name, pick the **Agent**, leave **Require request signing** checked, click **Generate token**. A panel shows the **bearer token** (`kc_whk_...`) and the **signing secret** (`kc_whs_...`) once. Copy both into the matching `gh secret set` prompts from doc 01 before you click **Dismiss, I have saved**; lose them and you **Revoke** the source and create it again.
+
+**Pick the mate, not the template.** The Agent dropdown lists both `implementer` (the mate) and `delivery-implementer` (the template it was built from). The row in the source list then reads `Agent: implementer`. If it reads `Agent: delivery-implementer`, runs execute on the shared template with the default memory store, not on the mate, and recreating the mate changes nothing; only the template file does. Select the row, **Routing** → **Agent**, and pick the mate. Re-routing keeps the token.
 
 Why one source per mate: a source's destination is fixed, so a job that borrows another mate's token runs *as that mate* and inherits its rules. In testing, the scribe on the planner's token refused to open a docs PR because the planner may not push. Separate sources also keep each mate on its own memory, which is what makes the reviewer independent of the implementer.
 
