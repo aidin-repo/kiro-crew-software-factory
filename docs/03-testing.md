@@ -40,7 +40,7 @@ Checks tools, `gh` login, repo visibility, all ten labels, the secrets, the work
 
 ## 3.3 Smoke test (creates real GitHub objects)
 
-Make sure `./run.sh` is running in the runner folder, then:
+Make sure the runner is online (`./run.sh` in a terminal, or the service) and `scripts/setup-gateway.sh` printed `Gateway ready`, then:
 
 ```bash
 CLEANUP=1 scripts/smoke-test.sh OWNER/REPO

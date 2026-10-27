@@ -39,10 +39,13 @@ done
 
 cat <<'EOF'
 
-Next: on the Kiro Crew dashboard, Settings > Webhooks > New, create one signed source per
-template that receives GitHub events, picking the template as the Agent:
-
-  delivery-planner, delivery-implementer, delivery-reviewer, delivery-scribe, github-worker
+Next:
+  1. scripts/setup-gateway.sh
+     Webhook runs are unattended: this writes the auto-approve rules the templates need and
+     checks that gh, git, node, npm, npx, shasum live in /usr/bin. Run its "->" lines, re-run.
+  2. On the Kiro Crew dashboard, Settings > Webhooks > New, one signed source per template that
+     receives GitHub events, picking the template as the Agent:
+       delivery-planner, delivery-implementer, delivery-reviewer, delivery-scribe, github-worker
 
 Webhook runs read these template files on every run; edit a file and the next run uses it.
 Mates are optional (only for a standing chat, e.g. the auditor). See docs/07-quickstart-checklist.md.

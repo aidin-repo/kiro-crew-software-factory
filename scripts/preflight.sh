@@ -79,6 +79,42 @@ else
   warn "kirocrew runner(s) registered but offline: $(tr '\n' ';' <<<"$RUNNERS") start it with ./run.sh"
 fi
 
+echo "Unattended tool policy (scripts/setup-gateway.sh fixes these)"
+# A webhook turn has no approver: a tool runs only if a hooks.auto_approve_tools rule
+# matches it and every program it names is in a trusted directory and unshadowed.
+CONFIG="$HOME/.kiro/crew/config.json"
+RULE_COUNT="$(python3 -c '
+import json,sys
+try:
+    c=json.load(open(sys.argv[1])); r=c.get("hooks",{}).get("auto_approve_tools",[])
+    need=["gh *","git *","npm *","npx *","shasum *","Write File*","Replace in File*","List Directory*","Delete File*","TZ=*"]
+    print(len([n for n in need if n in r]), len(need))
+except Exception: print("0 10")' "$CONFIG" 2>/dev/null)"
+if [[ "${RULE_COUNT% *}" == "${RULE_COUNT#* }" ]]; then
+  pass "hooks.auto_approve_tools has the rules the templates need"
+else
+  fail "hooks.auto_approve_tools is missing rules (${RULE_COUNT% *} of ${RULE_COUNT#* } present): run scripts/setup-gateway.sh"
+fi
+for prog in gh git node npm npx shasum; do
+  found="$(command -v "$prog" 2>/dev/null || true)"
+  if [[ -z "$found" ]]; then
+    fail "$prog not found"
+    continue
+  fi
+  case "$(dirname "$found")" in
+    /usr/bin|/bin|/usr/sbin|/sbin|/run/current-system/sw/bin) pass "$prog resolves to $found" ;;
+    *) if [[ "$(uname -s)" == "Darwin" ]]; then
+         warn "$prog resolves to $found (outside /usr/bin: approve '$prog --version' once per gateway start in a dashboard chat)"
+       else
+         fail "$prog resolves to $found, not a trusted system directory (run scripts/setup-gateway.sh)"
+       fi ;;
+  esac
+done
+HELPER="$(git config --get-urlmatch credential.helper https://github.com 2>/dev/null | tail -n 1 | sed -E 's/^!//; s/ .*$//')"
+if [[ -n "$HELPER" && ! -x "$HELPER" && "$HELPER" != "" ]]; then
+  fail "git credential helper points at $HELPER, which does not exist (run: gh auth setup-git)"
+fi
+
 echo "Kiro Crew gateway"
 CODE="$(curl -s -o /dev/null -m 5 -w '%{http_code}' http://127.0.0.1:5476/ 2>/dev/null)"
 if [[ -n "$CODE" && "$CODE" != "000" ]]; then
