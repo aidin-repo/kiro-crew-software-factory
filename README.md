@@ -129,7 +129,7 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 
 ## Documentation
 
-Read in this order if you are new: 07, then 00, then whatever you need.
+Read in this order if you are new: 07, then 00, then whatever you need. Opening this repository in a coding agent (Kiro, Claude Code, Codex, Cursor)? It reads [`AGENTS.md`](AGENTS.md) and can walk you through the install, handing you the steps only a human can do.
 
 | Doc | What it covers |
 |---|---|
