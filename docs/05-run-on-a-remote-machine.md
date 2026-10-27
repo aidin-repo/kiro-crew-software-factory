@@ -111,10 +111,10 @@ A remote machine is easier to reach than a laptop, so be stricter:
 - **Do not put the webhook token or signing secret** in instance user data, an image, or a file in a repo.
 - **The auto-approve rules are the trust boundary.** Each rule in `hooks.auto_approve_tools` lets an unattended agent run that program as your user. Keep the list to what the templates need; never `*`.
 
-## 5.8 What to check that may differ from the laptop
+## 5.8 Three more things that differ from your laptop
 
-- **The unattended policy.** It is the first thing that breaks on a new machine (doc 04, round three). Run `scripts/setup-gateway.sh` before the first label, not after.
 - **Model sign-in.** The machine uses its own Kiro sign-in, which may be a different account or model.
 - **Memory.** Its gateway has its own memory store and lessons.
-- **Node major.** `/usr/bin/node` must be the major your CI uses; the agents cannot switch versions.
-- **Run times.** On the laptop a full lifecycle took 6 to 8 minutes; on a small arm64 EC2 instance about 7 (install 20 s, 210 tests 10 s, build 10 s). Instance size matters little; model latency dominates.
+- **Run times.** On a small arm64 EC2 instance a full lifecycle took about 7 minutes (install 20 s, 210 tests 10 s, build 10 s); on a laptop 6 to 8. Instance size matters little; model latency dominates.
+
+Run `scripts/setup-gateway.sh` before the first label, not after: the unattended policy is the first thing that breaks on a new machine ([doc 04, round three](04-lessons-and-troubleshooting.md#what-went-wrong-moving-to-ec2-third-round-amazon-linux-2023-arm64-kiro-crew-0110)).

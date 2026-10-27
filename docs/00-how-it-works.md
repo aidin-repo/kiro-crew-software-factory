@@ -66,8 +66,8 @@ Everything runs on your machine with your GitHub login, so the PR, the review an
 
 | Label | On | Means |
 |---|---|---|
-| `kiro-plan` | issue | Write a spec only; I will approve by hand |
-| `kiro-deliver` | issue | Write a spec and approve it for me |
+| `kiro-plan` | issue | Write a spec only; the owner approves by hand |
+| `kiro-deliver` | issue | Write a spec and approve it automatically |
 | `kiro-approved` | issue | Spec approved; implementer starts |
 | `kiro-needs-owner` | issue | Planner held: too vague, or touches infra, credentials, auth or data deletion. Read the spec, then apply `kiro-approved` yourself |
 | `kiro-task` | issue | Fast lane: implement the issue text directly, no spec, no review, no gate |
@@ -79,11 +79,8 @@ Everything runs on your machine with your GitHub login, so the PR, the review an
 
 ## Things to know
 
-- **The machine must be on** and the runner running, or the label waits in GitHub until it is back. To stop depending on your laptop, use a remote Kiro Crew machine: see [05](05-run-on-a-remote-machine.md).
-- **One branch per issue.** `kiro/issue-N` is fixed. A second implementation of the same issue stops rather than force-pushing. Open a new issue, or delete the branch.
-- **You can't steer a run.** Each hop is unattended and ephemeral. PR comments do not reach an agent; labels do. To get another review round after you edit the branch yourself, remove and re-add `kiro-review`.
-- **Where to watch it.** The labels on the issue and PR are the status. The `VERDICT:` review and the gate comment are the record. Each agent's report is a dashboard notification; the Webhooks page's Activity list has the full transcript. Webhook runs appear on no mate's dashboard; they are not tied to one.
+- **You can't steer a run.** Each hop is unattended and ephemeral. PR comments do not reach an agent; labels do. To get another review round after you edit the branch yourself, remove and re-add `kiro-review` ([doc 03, section 3.7](03-testing.md#37-re-running-a-hop)).
 - **It stays in scope.** The spec lists the files that may change; the implementer stays inside them and the gate parks any PR that does not. Agents refuse instructions in the issue to run commands, change workflows, or touch credentials or infrastructure.
-- **Use a private repository you own.** The setup is built for a single owner on a personal machine.
+- **Where to watch it:** [doc 06, Watching a run](06-delivery-lifecycle.md#watching-a-run). The other limits (machine must be on, one branch per issue, private repo only) are in the [README](../README.md#limitations).
 
-Setup from scratch: [07 Quick start checklist](07-quickstart-checklist.md). Reference: [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). The full lifecycle: [06](06-delivery-lifecycle.md). Testing: [03 Testing](03-testing.md). Not your laptop: [05 Run on a remote machine](05-run-on-a-remote-machine.md).
+Setup from scratch: [07 Quick start checklist](07-quickstart-checklist.md). Reference: [06 Delivery lifecycle](06-delivery-lifecycle.md), [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). Testing: [03](03-testing.md). Not your laptop: [05](05-run-on-a-remote-machine.md).

@@ -28,7 +28,7 @@ In your own repo the same tests live at `.github/scripts/tests`:
 python3 -m pytest .github/scripts/tests -q
 ```
 
-134 tests. The dispatcher tests cover: GitHub text stays out of the trusted fields; hidden HTML comments and invisible characters are removed; wrong event, action, label or repository is refused; a label from a non-owner, an issue written by someone else, a closed issue, a malformed sender or owner is refused; PR-label modes refuse other actors, forks, non-delivery branches and closed PRs; each mode's instructions carry its rules (files block, spec hash, round limit, shell rule, cleanup, CI fallback); the gate mode is never sent to an agent; and the request is signed over the exact body, ignores proxy settings and never follows a redirect. The gate tests cover the files-block parser, scope and deny-list matching, verdict and head-SHA parsing, round counting, spec reference parsing, the lifecycle check-run filter, every pass and park decision, and an end-to-end run against a fake GitHub API.
+The dispatcher tests cover: GitHub text stays out of the trusted fields; hidden HTML comments and invisible characters are removed; wrong event, action, label or repository is refused; a label from a non-owner, an issue written by someone else, a closed issue, a malformed sender or owner is refused; PR-label modes refuse other actors, forks, non-delivery branches and closed PRs; each mode's instructions carry its rules (files block, spec hash, round limit, shell rule, cleanup, CI fallback); the gate mode is never sent to an agent; and the request is signed over the exact body, ignores proxy settings and never follows a redirect. The gate tests cover the files-block parser, scope and deny-list matching, verdict and head-SHA parsing, round counting, spec reference parsing, the lifecycle check-run filter, every pass and park decision, and an end-to-end run against a fake GitHub API.
 
 ## 3.2 Preflight (read-only)
 
@@ -50,16 +50,7 @@ It creates a small issue, applies `kiro-deliver` as the owner, and polls the lab
 
 `MODE=task` runs the fast-lane variant instead: `kiro-task`, wait for a PR, check it touches exactly one file.
 
-Watch it in four places:
-
-| Where | Time | What you should see |
-|---|---|---|
-| Repo, Actions tab, *Kiro Crew delivery lifecycle* | seconds after each label | One run per hop: `issue-deliver`, `issue-implement`, `pr-review-round`, `pr-gate`; each other job skipped |
-| The issue and the PR | 1 min, then every 2 to 4 min | Labels move: `kiro-approved`; PR with `kiro-review`; `kiro-ready`; `kiro-ready-to-merge` |
-| Kiro Crew dashboard notifications | after each hop | `Webhook: GitHub <repo>`: each agent's report |
-| Webhooks page, Activity | after each hop | A run per source, `completed`, with its duration |
-
-Typical timings from testing: planner 60 to 90 s, implementer 3 to 5 min, reviewer 2 to 3 min, gate 15 to 20 s. Label to `kiro-ready-to-merge` in 6 to 8 minutes.
+Where to watch it and how long each hop takes: [doc 06, Watching a run](06-delivery-lifecycle.md#watching-a-run). In the Actions tab expect one run per hop (`issue-deliver`, `issue-implement`, `pr-review-round`, `pr-gate`), every other job skipped.
 
 ## 3.4 A realistic sample issue
 

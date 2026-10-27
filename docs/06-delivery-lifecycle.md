@@ -1,22 +1,6 @@
-# Delivery lifecycle
+# 6. Delivery lifecycle reference
 
-One agent, one job. Every handoff is a GitHub label event. Nothing polls except the
-auditor, whose only job is to notice a stall.
-
-```mermaid
-flowchart LR
-    I["Issue + kiro-deliver"] -->|webhook| P["delivery-planner<br/>writes the spec"]
-    P -->|kiro-approved| IMP["delivery-implementer<br/>worktree, PR, kiro-review"]
-    P -.->|kiro-needs-owner| H["Owner reads spec,<br/>applies kiro-approved"]
-    H --> IMP
-    IMP -->|PR kiro-review| R["delivery-reviewer<br/>VERDICT review, relabel"]
-    R -->|kiro-changes-requested| IMP
-    R -->|kiro-ready| G["pr-gate job<br/>kiro_gate.py, no model"]
-    G -->|kiro-ready-to-merge| M["Owner merges"]
-    G -.->|kiro-parked| M
-    M -->|merged| S["delivery-scribe<br/>docs PR"]
-    A["delivery-auditor<br/>patrol, liveness only"] -.-> M
-```
+One agent, one job. Every handoff is a GitHub label event. Nothing polls except the auditor, whose only job is to notice a stall. This page is the reference for the roles, the trust boundaries and where things run. The walkthrough with diagrams is [doc 00](00-how-it-works.md); setup is [doc 07](07-quickstart-checklist.md).
 
 ## Agents
 
@@ -30,70 +14,7 @@ flowchart LR
 | delivery-auditor (as the `auditor` mate) | timer | Lists stuck labels and failed runs | nothing (reports only) |
 | github-worker | `kiro-task` on an issue | Fast lane, no spec, no review | PR |
 
-Each role is its own webhook source on the Kiro Crew Webhooks page, routed to its own
-template, so a job never runs with another role's rules. Each run is an ephemeral
-session; the reviewer never reads the implementer's session and judges only what is on
-GitHub.
-
-## Labels
-
-| Label | Lives on | Meaning |
-|---|---|---|
-| `kiro-plan` | issue | Owner wants a spec, will approve by hand |
-| `kiro-deliver` | issue | Owner wants a spec and automatic approval |
-| `kiro-approved` | issue | Spec approved; implementer starts |
-| `kiro-needs-owner` | issue | Planner withheld approval; reason is the first line of its report and under Open questions |
-| `kiro-task` | issue | Fast lane, no spec |
-| `kiro-review` | PR | Waiting for the reviewer |
-| `kiro-changes-requested` | PR | Reviewer found problems; implementer fixes |
-| `kiro-ready` | PR | Reviewer approved; gate runs |
-| `kiro-ready-to-merge` | PR | Gate passed; owner may merge |
-| `kiro-parked` | PR | Gate failed or round limit hit; owner decides |
-
-## Setup
-
-New to this? [Doc 07](07-quickstart-checklist.md) is the same material as one ordered checklist with prerequisites. The steps below assume Kiro Crew 0.11 or newer.
-
-1. Labels and secrets: `scripts/setup-github.sh OWNER/REPO` creates every label below
-   and prompts for one token + signing secret pair per template. Or by hand:
-
-   ```bash
-   for l in kiro-plan kiro-deliver kiro-approved kiro-needs-owner kiro-task kiro-review kiro-changes-requested kiro-ready kiro-ready-to-merge kiro-parked; do
-     gh label create "$l" --repo OWNER/REPO --force
-   done
-   ```
-
-2. Agent templates: `scripts/install-agent.sh` copies `templates/agent/*` into `~/.kiro/agents/`.
-
-3. Mates are optional. Webhook sources route to templates and each run reads the
-   template file, so the pipeline needs none. Create one only for a standing chat, for
-   example `kirocrew agent create --name auditor --kiro-agent delivery-auditor`. A
-   mate's name must differ from its template's name.
-
-4. Webhook sources, on the Kiro Crew dashboard Webhooks page: create one source per
-   template (delivery-planner, delivery-implementer, delivery-reviewer, delivery-scribe,
-   github-worker), each with signing required. Copy each token and signing secret once.
-
-5. Repository secrets:
-
-   ```bash
-   gh secret set KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER --repo OWNER/REPO
-   gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER --repo OWNER/REPO
-   gh secret set KIROCREW_WEBHOOK_TOKEN_REVIEWER --repo OWNER/REPO
-   gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER --repo OWNER/REPO
-   gh secret set KIROCREW_WEBHOOK_TOKEN_SCRIBE --repo OWNER/REPO
-   gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE --repo OWNER/REPO
-   gh secret set KIROCREW_WEBHOOK_TOKEN_WORKER --repo OWNER/REPO
-   gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER --repo OWNER/REPO
-   ```
-
-   `KIROCREW_WEBHOOK_TOKEN` and `KIROCREW_WEBHOOK_SIGNING_SECRET` stay as the planner's.
-   Every agent needs its own source: a source's destination is fixed, so a job that
-   borrows another source's token runs as that template and inherits its rules (a scribe run
-   on the planner's token refuses to open the docs PR, because the planner may not push).
-
-6. Optional: arm the auditor. Open the `auditor` mate from the Mates page and ask it to
-   patrol every 10 minutes; it reports stuck labels and failed runs and does nothing else.
+Each role is its own webhook source on the Kiro Crew Webhooks page, routed to its own template, so a job never runs with another role's rules. Each run is an ephemeral session; the reviewer never reads the implementer's session and judges only what is on GitHub. The labels each role reads and writes are listed in [doc 00](00-how-it-works.md#the-labels).
 
 ## Watching a run
 
@@ -106,10 +27,15 @@ You do not need any dashboard. The labels are the status:
 | Reviewer's conclusion | The `VERDICT:` review on the PR |
 | Why the gate passed or parked | The "Delivery gate" comment on the PR |
 | A hop did not fire | Actions tab, workflow "Kiro Crew delivery lifecycle"; each job is one hop |
-| What an agent reported | Dashboard notifications or Slack DM, "Webhook: GitHub <repo>" |
-| Full transcript | Dashboard, Webhooks, Activity, click the run |
+| What an agent reported | Dashboard notification "Webhook: GitHub <repo>" |
+| Full transcript | Dashboard, Settings → Webhooks, Activity, click the run |
+| Every tool call and refusal | `~/.kiro/crew/security_events.jsonl` ([doc 04](04-lessons-and-troubleshooting.md#reading-the-evidence-yourself)) |
+
+Typical timings: planner 30 to 90 s, implementer 2 to 5 min, reviewer 1 to 3 min, gate seconds. Label to `kiro-ready-to-merge` in 4 to 8 minutes.
 
 ## Trust boundaries
+
+The [README's Security model](../README.md#security-model) is the summary; these are the checks as enforced.
 
 - Every job re-validates the event in `dispatch_kiro_event.py`: the owner wrote the
   issue, the owner applied the label, the PR is on `kiro/issue-N` in this repository.
@@ -123,9 +49,4 @@ You do not need any dashboard. The labels are the status:
 
 ## Where it runs
 
-Everything runs on the machine that hosts the self-hosted runner and the Kiro Crew
-gateway: the Actions jobs (which only validate the event and POST a signed webhook to
-`127.0.0.1`), the agents, their worktrees, tests and git pushes. GitHub stores issues,
-labels, branches and PRs and fires the events; the project's own `ci.yml` may run on
-GitHub-hosted runners and the gate reads its results through the API. If the machine is
-off, labels wait in the Actions queue until it is back.
+Everything runs on the machine that hosts the self-hosted runner and the Kiro Crew gateway: the Actions jobs (which only validate the event and POST a signed webhook to `127.0.0.1`), the agents, their worktrees, tests and git pushes. GitHub stores issues, labels, branches and PRs and fires the events; the project's own `ci.yml` may run on GitHub-hosted runners and the gate reads its results through the API. If the machine is off, labels wait in the Actions queue until it is back. That machine can be a laptop, an EC2 instance or a container ([doc 05](05-run-on-a-remote-machine.md)).

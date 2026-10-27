@@ -33,7 +33,7 @@ This project takes that literally. GitHub labels are the queue, the state machin
 
 A fast lane still exists: label an issue `kiro-task` and `github-worker` implements the issue text directly with no spec, review or gate.
 
-In our tests a labelled issue became a `kiro-ready-to-merge` pull request in 6 to 8 minutes with no human in the loop. Each handoff fired within 3 to 10 seconds of the previous label.
+In testing, a labelled issue became a `kiro-ready-to-merge` pull request in 4 to 8 minutes with no human in the loop, on a Mac laptop and on an EC2 instance. Each handoff fired within 3 to 10 seconds of the previous label.
 
 ## How it works
 
@@ -129,17 +129,19 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 
 ## Documentation
 
+Read in this order if you are new: 07, then 00, then whatever you need.
+
 | Doc | What it covers |
 |---|---|
-| [07 Quick start checklist](docs/07-quickstart-checklist.md) | Start here if you are new: zero to first PR, one ordered list |
-| [06 Delivery lifecycle](docs/06-delivery-lifecycle.md) | The five agents, the labels, setup, trust boundaries |
-| [00 How it works](docs/00-how-it-works.md) | The fast lane (`kiro-task`) step by step, and what runs where |
-| [01 GitHub activation](docs/01-github-activation.md) | Labels, secrets, workflow, runner, branch protection |
-| [02 Kiro Crew setup](docs/02-kiro-crew-setup.md) | Templates, webhook sources, routing, approvals, the optional auditor mate |
-| [03 Testing](docs/03-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests |
-| [04 Lessons and troubleshooting](docs/04-lessons-and-troubleshooting.md) | What went wrong while building this, and the fixes |
+| [07 Quick start checklist](docs/07-quickstart-checklist.md) | **Start here.** Zero to first PR, one ordered list |
+| [00 How it works](docs/00-how-it-works.md) | Using it day to day: write the issue, add the label, read the PR; what happens behind the scenes; the labels |
+| [06 Delivery lifecycle reference](docs/06-delivery-lifecycle.md) | The roles, where to watch a run, trust boundaries, where it runs |
+| [01 GitHub activation](docs/01-github-activation.md) | Labels, secrets, workflow, runner, branch protection, in detail |
+| [02 Kiro Crew setup](docs/02-kiro-crew-setup.md) | Templates, webhook sources, the unattended approval policy, the optional auditor mate |
+| [03 Testing](docs/03-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests, re-running a hop |
+| [04 Lessons and troubleshooting](docs/04-lessons-and-troubleshooting.md) | Symptom table, what went wrong while building this, how to read the evidence |
 | [05 Run it anywhere](docs/05-run-on-a-remote-machine.md) | Laptop, EC2 or a container: what differs per host, the tested EC2 steps, a container recipe |
-| [08 Customizing the agents](docs/08-customizing-the-agents.md) | Your own prompts (`templates/agent.local/`), other languages and tools, new roles, and the contracts you must keep |
+| [08 Customizing the agents](docs/08-customizing-the-agents.md) | Your own prompts, other languages and tools, new roles, and the contracts you must keep |
 
 The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/`:
 
