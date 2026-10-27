@@ -16,7 +16,7 @@ From a normal terminal (an agent session cannot write to `~/.kiro/agents`):
 scripts/install-agent.sh
 ```
 
-It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the next steps.
+It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the next steps. To change a prompt, copy the file into `templates/agent.local/` and edit it there; the script prefers that folder and `git pull` never touches it ([doc 08](08-customizing-the-agents.md)).
 
 | Template | One job |
 |---|---|

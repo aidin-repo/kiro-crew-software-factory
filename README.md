@@ -139,12 +139,13 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 | [03 Testing](docs/03-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests |
 | [04 Lessons and troubleshooting](docs/04-lessons-and-troubleshooting.md) | What went wrong while building this, and the fixes |
 | [05 Run it anywhere](docs/05-run-on-a-remote-machine.md) | Laptop, EC2 or a container: what differs per host, the tested EC2 steps, a container recipe |
+| [08 Customizing the agents](docs/08-customizing-the-agents.md) | Your own prompts (`templates/agent.local/`), other languages and tools, new roles, and the contracts you must keep |
 
 The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/`:
 
 | Script | Does |
 |---|---|
-| `install-agent.sh` | Copies the six templates into `~/.kiro/agents/` |
+| `install-agent.sh` | Copies the six templates into `~/.kiro/agents/`; files in `templates/agent.local/` override them; `--keep` protects in-place edits |
 | `setup-gateway.sh` | Writes the unattended auto-approve rules, checks program paths and the credential helper, prints the fixes |
 | `setup-github.sh OWNER/REPO` | Creates the labels, stores the ten webhook secrets |
 | `install-into-repo.sh PATH` | Copies the workflow, dispatcher, gate and tests into your clone |

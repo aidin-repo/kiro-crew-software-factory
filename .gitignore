@@ -1,3 +1,6 @@
+# Your own prompts and roles; install-agent.sh prefers these over templates/agent/
+templates/agent.local/
+
 # Local tool and IDE files
 .env.omni
 .omni/

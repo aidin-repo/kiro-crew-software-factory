@@ -181,6 +181,6 @@ Alternative for the secrets: export all ten as environment variables and let `sc
 | PR stuck at `kiro-review` after 10 min | Dashboard notification from the reviewer; re-add the label to retry |
 | Any hop's notification says "the tool policy refused" a command | `scripts/setup-gateway.sh` again; doc 02, section 2.5 names each refusal code. Delete `kiro/issue-N` before re-labelling `kiro-approved` |
 | PR has `kiro-parked` | The gate comment lists each failed check |
-| A prompt change you made is not picked up | Edit the file in `~/.kiro/agents/`; the next webhook run reads it. No restart or mate step is needed |
+| A prompt change you made is not picked up | Edit the file in `~/.kiro/agents/`; the next webhook run reads it. No restart or mate step is needed. To keep the change across updates, put it in `templates/agent.local/` (doc 08) |
 
 Full troubleshooting: [doc 04](04-lessons-and-troubleshooting.md). How each piece works: [doc 06](06-delivery-lifecycle.md).
