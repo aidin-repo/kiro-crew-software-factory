@@ -75,7 +75,7 @@ Work through this with the person. Stop at each hand-over and give them the comm
 | `templates/scripts/kiro_gate.py` | the deterministic merge gate, no model |
 | `templates/scripts/tests/` | pytest for both scripts |
 | `scripts/` | install, setup, preflight, smoke test (README has the table) |
-| `docs/` | 00 how it works, 01 GitHub, 02 Kiro Crew, 03 testing, 04 troubleshooting, 05 laptop/EC2/container, 06 reference, 07 checklist, 08 customizing |
+| `docs/` | 01 checklist, 02 how it works, 03 reference, 04 GitHub, 05 Kiro Crew, 06 testing, 07 laptop/EC2/container, 08 customizing, 09 troubleshooting |
 
 ## When something stalls
 
