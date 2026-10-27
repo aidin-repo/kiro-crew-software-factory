@@ -1,10 +1,11 @@
 # Your own prompts and roles; install-agent.sh prefers these over templates/agent/
 templates/agent.local/
 
-# Local tool and IDE files
+# Local tool and IDE files. The steering file for Kiro is tracked; the rest of .kiro/ is not.
 .env.omni
 .omni/
-.kiro/
+.kiro/*
+!.kiro/steering/
 .claude/
 .cursor/
 .agents/
