@@ -102,18 +102,30 @@ REG_TOKEN="$(gh api -X POST "repos/$REPO/actions/runners/registration-token" --j
   --labels kirocrew \
   --replace
 
+# SERVICE=1: install and start it as a service so it survives logout and reboot.
+# macOS: a LaunchAgent for this user. Linux: a systemd unit (svc.sh needs sudo).
+# Containers without systemd: use the nohup line printed below instead.
+if [[ "${SERVICE:-0}" == "1" ]]; then
+  if [[ "$(uname -s)" == "Linux" ]] && ! command -v systemctl >/dev/null 2>&1; then
+    echo "No systemd here (container?). Start the runner with the nohup line below." >&2
+  else
+    SUDO=""
+    [[ "$(uname -s)" == "Linux" ]] && SUDO="sudo"
+    $SUDO ./svc.sh install "$(id -un)" && $SUDO ./svc.sh start && echo "Runner service installed and started."
+  fi
+fi
+
 cat <<EOF
 
 Runner "$RUNNER_NAME" is registered for $REPO with labels: self-hosted, kirocrew (plus OS/arch).
-Start it in a normal terminal (keep it open):
 
-  cd "$RUNNER_DIR"
-  ./run.sh
+Start it one of these ways:
 
-Optional - start at login instead (macOS LaunchAgent / Linux systemd):
+  a) a terminal you keep open:            cd "$RUNNER_DIR" && ./run.sh
+  b) as a service (survives logout):      SERVICE=1 scripts/install-runner.sh $REPO
+                                          or: cd "$RUNNER_DIR" && sudo ./svc.sh install \$(id -un) && sudo ./svc.sh start
+  c) no systemd (Docker, plain shell):    cd "$RUNNER_DIR" && nohup ./run.sh > runner.log 2>&1 &
 
-  cd "$RUNNER_DIR"
-  ./svc.sh install && ./svc.sh start
-
-Remember: while the runner is stopped, labelled issues simply queue until it comes back.
+A runner started with ./run.sh in an SSH session dies when that session ends; labelled
+issues then sit "queued" in Actions until it is back. Prefer b) on EC2, c) in a container.
 EOF

@@ -7,7 +7,8 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
 ## 0. Prerequisites
 
 - [ ] **A private GitHub repository you own personally.** Org-owned repos do not work as written (doc 01, section 1.1). The setup scripts refuse public repos.
-- [ ] **Kiro Crew 0.11 or newer**, installed and running on the machine that will do the work (your laptop, or a remote box per doc 05). Check: `kirocrew --version`. Older builds call mates "crewmates" and lack `--display-name`; the mate names in this guide may need adjusting there.
+- [ ] **Kiro Crew 0.11 or newer**, installed and running on the machine that will do the work: your laptop, an EC2 instance, or a container (doc 05 has the per-host differences). Check: `kirocrew --version`. Older builds call mates "crewmates" and lack `--display-name`; the mate names in this guide may need adjusting there.
+- [ ] **`sudo` on that machine** (Linux), or the ability to rebuild the image (container). Step 2b moves `gh` and Node into `/usr/bin`. On macOS no sudo is needed, but see doc 05, section 5.4.
 - [ ] **Kiro Crew signed in to a model.** Open any chat and send "hello". If it answers, you are signed in.
 - [ ] **`gh` logged in as the repository owner:** `gh auth status`. Use a fine-grained token scoped to the one repository if you can.
 - [ ] **`git`, `python3`, `curl` on PATH.** Check with `git --version && python3 --version && curl --version`.
@@ -34,7 +35,21 @@ Where a step is dashboard-only, a screenshot placeholder shows what you should s
   scripts/install-agent.sh
   ```
 
-  It copies `templates/agent/*` into `~/.kiro/agents/` and prints the six commands for the next step. Expected last lines: six `Installed ~/.kiro/agents/...` and the `kirocrew agent create` block.
+  It copies `templates/agent/*` into `~/.kiro/agents/` and prints the next steps. Expected: six `Installed ~/.kiro/agents/...` lines.
+
+## 2b. Kiro Crew: prepare the gateway for unattended runs
+
+Webhook runs have nobody to click Approve. Without this step the planner stops at its first `gh` call.
+
+- [ ] Same terminal:
+
+  ```bash
+  scripts/setup-gateway.sh
+  ```
+
+  It writes the auto-approve rules into `~/.kiro/crew/config.json` and checks that `gh`, `git`, `node`, `npm`, `npx`, `shasum`, `python3` live in `/usr/bin` with no copy earlier on `PATH`. Run every `->` line it prints (they need `sudo`), then re-run until it says `Gateway ready`. Details and the macOS exception: doc 02, section 2.5; per-host steps: doc 05.
+
+- [ ] `node --version` prints the Node major your repository's CI uses.
 
 ## 3. Kiro Crew: check the templates are visible (mates are optional)
 
@@ -115,18 +130,19 @@ Alternative for the secrets: export all ten as environment variables and let `sc
   scripts/install-runner.sh OWNER/REPO
   ```
 
-- [ ] Start it in a terminal you keep open, and wait for "Listening for Jobs":
+- [ ] Start it. Pick one:
 
-  ```bash
-  cd ~/actions-runner-kirocrew
-  ./run.sh
-  ```
+  | Where | Command |
+  |---|---|
+  | Laptop, trying it out | `cd ~/actions-runner-kirocrew && ./run.sh` in a terminal you keep open |
+  | Laptop or EC2, for good | `SERVICE=1 scripts/install-runner.sh OWNER/REPO` (LaunchAgent or systemd; Linux needs sudo) |
+  | Container, no systemd | `cd ~/actions-runner-kirocrew && nohup ./run.sh > runner.log 2>&1 &` |
 
-- [ ] Repository **Actions** → **Runners** (left sidebar) → **Self-hosted runners** shows it with labels `self-hosted`, `kirocrew`, and the OS and architecture of your machine.
+  A runner started with `./run.sh` over SSH stops when the SSH session ends, and labelled issues then sit `queued`.
+
+- [ ] Repository **Actions** → **Runners** (left sidebar) → **Self-hosted runners** shows it **Idle** with labels `self-hosted`, `kirocrew`, and the OS and architecture of your machine.
 
   ![The repository's self-hosted runners list showing a macOS arm64 runner with the kirocrew label](images/06-runner-idle.png)
-
-To keep it running after you close the terminal: `./svc.sh install && ./svc.sh start` in the runner folder.
 
 ## 7. Verify
 
@@ -163,6 +179,7 @@ To keep it running after you close the terminal: `./svc.sh install && ./svc.sh s
 | Issue has `kiro-needs-owner` | The planner held. Read its comment's Open questions, then apply `kiro-approved` yourself |
 | `kiro-approved` but no PR after 10 min | Actions: `issue-implement` result. Dashboard notification: the implementer's report |
 | PR stuck at `kiro-review` after 10 min | Dashboard notification from the reviewer; re-add the label to retry |
+| Any hop's notification says "the tool policy refused" a command | `scripts/setup-gateway.sh` again; doc 02, section 2.5 names each refusal code. Delete `kiro/issue-N` before re-labelling `kiro-approved` |
 | PR has `kiro-parked` | The gate comment lists each failed check |
 | A prompt change you made is not picked up | Edit the file in `~/.kiro/agents/`; the next webhook run reads it. No restart or mate step is needed |
 

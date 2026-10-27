@@ -60,8 +60,8 @@ New here? Follow **[docs/07, the zero-to-first-PR checklist](docs/07-quickstart-
 You need:
 
 - a **private** GitHub repository you own personally (not an org), with a CI workflow that runs on pull requests;
-- **Kiro Crew 0.11 or newer**, running and signed in to a model, on the machine that will do the work (your laptop, or a remote box per [docs/05](docs/05-run-on-a-remote-machine.md), not yet tested);
-- `gh` logged in as the owner, plus `git`, `python3`, `curl`, and the runtime your CI uses (for Node projects, the same Node major).
+- **Kiro Crew 0.11 or newer**, running and signed in to a model, on the machine that will do the work: your laptop, an EC2 instance, or a container ([docs/05](docs/05-run-on-a-remote-machine.md) has the per-host differences; laptop and EC2 are tested);
+- `gh` logged in as the owner, plus `git`, `python3`, `curl`, `shasum`, and the runtime your CI uses (for Node projects, the same Node major). On Linux these must end up in `/usr/bin`; `scripts/setup-gateway.sh` tells you how.
 
 **1. Kiro Crew side** (see [docs/06](docs/06-delivery-lifecycle.md) and [docs/02](docs/02-kiro-crew-setup.md)):
 
@@ -69,9 +69,10 @@ You need:
 git clone https://github.com/aidin-repo/kiro-crew-software-factory
 cd kiro-crew-software-factory
 scripts/install-agent.sh
+scripts/setup-gateway.sh    # auto-approve rules + trusted program paths; run its "->" lines, re-run
 ```
 
-Then under **Settings → Webhooks** create one signed source per template with **New** (planner, implementer, reviewer, scribe, worker), picking the template as the Agent. Copy every token and signing secret when shown; they appear once.
+Webhook runs are unattended, so `setup-gateway.sh` is what lets the agents run `gh`, `git`, `npm` and the file tools at all. Then under **Settings → Webhooks** create one signed source per template with **New** (planner, implementer, reviewer, scribe, worker), picking the template as the Agent. Copy every token and signing secret when shown; they appear once. Sources belong to this gateway: a new machine needs new sources.
 
 **2. GitHub side.** Replace `OWNER/REPO` and `~/code/REPO`:
 
@@ -84,7 +85,7 @@ scripts/install-runner.sh OWNER/REPO
 
 `install-into-repo.sh` only copies files and prints the commit commands. Merge that change to the default branch before testing, because the workflow only fires from there.
 
-**3. Start the runner** in its own terminal and leave it open:
+**3. Start the runner.** In a terminal you keep open, or as a service so it survives logout (`SERVICE=1 scripts/install-runner.sh OWNER/REPO`), or with `nohup` in a container:
 
 ```bash
 cd ~/actions-runner-kirocrew && ./run.sh
@@ -122,7 +123,7 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 - **One branch per issue.** `kiro/issue-N` is fixed, so a second implementation of the same issue stops. Use a new issue or delete the branch.
 - **No live steering.** Each webhook run is unattended and ephemeral. You see its report as a dashboard notification when it finishes, and PR comments do not reach an agent; labels do.
 - **Comment reviews, not approvals.** The reviewer posts a `--comment` review because GitHub refuses approve/request-changes on your own PR. The gate reads the `VERDICT:` line instead of review state.
-- **Unattended host policy.** Some commands (switching Node versions with nvm, running npm lifecycle scripts) are refused in unattended turns. The agents fall back to CI's results and say so in the review.
+- **Unattended host policy.** A webhook turn runs only the tool calls that match an auto-approve rule in the gateway's config, and only for programs in a trusted system directory (`/usr/bin`), given as one plain shell line. `scripts/setup-gateway.sh` sets this up; docs/02, section 2.5 explains it. Switching Node versions with nvm stays refused, so `/usr/bin/node` must be the major your CI uses. On macOS, programs outside `/usr/bin` need a one-time approval per gateway start.
 - **Needs CI.** The gate requires at least one CI check on the PR head. A repository with no CI workflow parks every PR until you set `KIRO_GATE_REQUIRE_CI: "false"` on the `pr-gate` job.
 - **Gateway port.** The dispatcher assumes `127.0.0.1:5476`. Set `KIROCREW_WEBHOOK_URL` in the workflow if yours differs; non-loopback addresses are refused.
 
@@ -137,6 +138,16 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 | [02 Kiro Crew setup](docs/02-kiro-crew-setup.md) | Templates, webhook sources, routing, approvals, the optional auditor mate |
 | [03 Testing](docs/03-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests |
 | [04 Lessons and troubleshooting](docs/04-lessons-and-troubleshooting.md) | What went wrong while building this, and the fixes |
-| [05 Run on a remote machine](docs/05-run-on-a-remote-machine.md) | Use a dev box or EC2 instance instead of your laptop (not yet tested) |
+| [05 Run it anywhere](docs/05-run-on-a-remote-machine.md) | Laptop, EC2 or a container: what differs per host, the tested EC2 steps, a container recipe |
 
-The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/` (setup, install, preflight, smoke test).
+The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/`:
+
+| Script | Does |
+|---|---|
+| `install-agent.sh` | Copies the six templates into `~/.kiro/agents/` |
+| `setup-gateway.sh` | Writes the unattended auto-approve rules, checks program paths and the credential helper, prints the fixes |
+| `setup-github.sh OWNER/REPO` | Creates the labels, stores the ten webhook secrets |
+| `install-into-repo.sh PATH` | Copies the workflow, dispatcher, gate and tests into your clone |
+| `install-runner.sh OWNER/REPO` | Downloads, verifies and registers the runner; `SERVICE=1` also installs it as a service |
+| `preflight.sh OWNER/REPO` | Read-only check of everything above |
+| `smoke-test.sh OWNER/REPO` | Runs one real issue through the whole lifecycle |
