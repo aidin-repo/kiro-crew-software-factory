@@ -86,5 +86,5 @@ Next:
 Webhook runs read these template files on every run; edit a file and the next run uses it.
 To change a prompt without losing it on the next `git pull`, copy the template into
 templates/agent.local/ and edit it there (docs/08-customizing-the-agents.md).
-Mates are optional (only for a standing chat, e.g. the auditor). See docs/07-quickstart-checklist.md.
+Mates are optional (only for a standing chat, e.g. the auditor). See docs/01-quickstart-checklist.md.
 EOF

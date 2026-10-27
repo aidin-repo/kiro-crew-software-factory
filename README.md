@@ -51,19 +51,19 @@ flowchart LR
     M -->|merged| S["scribe<br/>docs PR"]
 ```
 
-Everything runs on your machine. A self-hosted Actions runner turns each label event into a signed webhook to the local Kiro Crew gateway; the gateway runs the agent for that label; its shell, git and tests execute on your disk. GitHub only stores issues, labels, branches and PRs and fires the events. Only the repository owner's labels start work, and nothing merges on its own. [Doc 06](docs/06-delivery-lifecycle.md) is the full picture; [Doc 00](docs/00-how-it-works.md) walks the fast lane step by step.
+Everything runs on your machine. A self-hosted Actions runner turns each label event into a signed webhook to the local Kiro Crew gateway; the gateway runs the agent for that label; its shell, git and tests execute on your disk. GitHub only stores issues, labels, branches and PRs and fires the events. Only the repository owner's labels start work, and nothing merges on its own. [Doc 03](docs/03-delivery-lifecycle.md) is the full picture; [Doc 02](docs/02-how-it-works.md) walks the fast lane step by step.
 
 ## Quick start
 
-New here? Follow **[docs/07, the zero-to-first-PR checklist](docs/07-quickstart-checklist.md)**: one ordered list with a checkbox per step. The summary below is for people who have done it before.
+New here? Follow **[docs/01, the zero-to-first-PR checklist](docs/01-quickstart-checklist.md)**: one ordered list with a checkbox per step. The summary below is for people who have done it before.
 
 You need:
 
 - a **private** GitHub repository you own personally (not an org), with a CI workflow that runs on pull requests;
-- **Kiro Crew 0.11 or newer**, running and signed in to a model, on the machine that will do the work: your laptop, an EC2 instance, or a container ([docs/05](docs/05-run-on-a-remote-machine.md) has the per-host differences; laptop and EC2 are tested);
+- **Kiro Crew 0.11 or newer**, running and signed in to a model, on the machine that will do the work: your laptop, an EC2 instance, or a container ([docs/07](docs/07-run-on-a-remote-machine.md) has the per-host differences; laptop and EC2 are tested);
 - `gh` logged in as the owner, plus `git`, `python3`, `curl`, `shasum`, and the runtime your CI uses (for Node projects, the same Node major). On Linux these must end up in `/usr/bin`; `scripts/setup-gateway.sh` tells you how.
 
-**1. Kiro Crew side** (see [docs/06](docs/06-delivery-lifecycle.md) and [docs/02](docs/02-kiro-crew-setup.md)):
+**1. Kiro Crew side** (see [docs/03](docs/03-delivery-lifecycle.md) and [docs/05](docs/05-kiro-crew-setup.md)):
 
 ```bash
 git clone https://github.com/aidin-repo/kiro-crew-software-factory
@@ -111,7 +111,7 @@ An issue's text can influence a program that has shell access to your machine, s
 - **One agent, one job, one token.** Each stage runs as its own template with its own webhook source in its own ephemeral session, so a stage cannot borrow another's permissions and the reviewer never reads the implementer's session.
 - **Trusted code only.** Jobs check out the default branch. The gate never checks out PR code; it reads the GitHub API.
 - **Signed and loopback.** The dispatcher sends a bearer token plus an HMAC signature, refuses any non-loopback webhook URL, ignores proxy settings and never follows a redirect.
-- **No merge, no deploy.** `kiro-ready-to-merge` is the pipeline's last word. Protect the default branch with a ruleset that requires a pull request and does not let admins bypass it (docs/01, section 1.5).
+- **No merge, no deploy.** `kiro-ready-to-merge` is the pipeline's last word. Protect the default branch with a ruleset that requires a pull request and does not let admins bypass it (docs/04, section 4.5).
 - **Rounds are capped.** Three review rounds, then the gate parks the PR for you.
 - **It runs shell commands as you.** Commits, reviews and PRs appear under your GitHub account, so treat the label like typing the command yourself.
 
@@ -123,25 +123,25 @@ The owner checks, loopback rule, signature, scope check and round cap are enforc
 - **One branch per issue.** `kiro/issue-N` is fixed, so a second implementation of the same issue stops. Use a new issue or delete the branch.
 - **No live steering.** Each webhook run is unattended and ephemeral. You see its report as a dashboard notification when it finishes, and PR comments do not reach an agent; labels do.
 - **Comment reviews, not approvals.** The reviewer posts a `--comment` review because GitHub refuses approve/request-changes on your own PR. The gate reads the `VERDICT:` line instead of review state.
-- **Unattended host policy.** A webhook turn runs only the tool calls that match an auto-approve rule in the gateway's config, and only for programs in a trusted system directory (`/usr/bin`), given as one plain shell line. `scripts/setup-gateway.sh` sets this up; docs/02, section 2.5 explains it. Switching Node versions with nvm stays refused, so `/usr/bin/node` must be the major your CI uses. On macOS, programs outside `/usr/bin` need a one-time approval per gateway start.
+- **Unattended host policy.** A webhook turn runs only the tool calls that match an auto-approve rule in the gateway's config, and only for programs in a trusted system directory (`/usr/bin`), given as one plain shell line. `scripts/setup-gateway.sh` sets this up; docs/05, section 5.5 explains it. Switching Node versions with nvm stays refused, so `/usr/bin/node` must be the major your CI uses. On macOS, programs outside `/usr/bin` need a one-time approval per gateway start.
 - **Needs CI.** The gate requires at least one CI check on the PR head. A repository with no CI workflow parks every PR until you set `KIRO_GATE_REQUIRE_CI: "false"` on the `pr-gate` job.
 - **Gateway port.** The dispatcher assumes `127.0.0.1:5476`. Set `KIROCREW_WEBHOOK_URL` in the workflow if yours differs; non-loopback addresses are refused.
 
 ## Documentation
 
-Read in this order if you are new: 07, then 00, then whatever you need. Opening this repository in a coding agent (Kiro, Claude Code, Codex, Cursor)? It reads [`AGENTS.md`](AGENTS.md) and can walk you through the install, handing you the steps only a human can do.
+The numbers are the reading order: 01, then 02, then whatever you need. Opening this repository in a coding agent (Kiro, Claude Code, Codex, Cursor)? It reads [`AGENTS.md`](AGENTS.md) and can walk you through the install, handing you the steps only a human can do.
 
 | Doc | What it covers |
 |---|---|
-| [07 Quick start checklist](docs/07-quickstart-checklist.md) | **Start here.** Zero to first PR, one ordered list |
-| [00 How it works](docs/00-how-it-works.md) | Using it day to day: write the issue, add the label, read the PR; what happens behind the scenes; the labels |
-| [06 Delivery lifecycle reference](docs/06-delivery-lifecycle.md) | The roles, where to watch a run, trust boundaries, where it runs |
-| [01 GitHub activation](docs/01-github-activation.md) | Labels, secrets, workflow, runner, branch protection, in detail |
-| [02 Kiro Crew setup](docs/02-kiro-crew-setup.md) | Templates, webhook sources, the unattended approval policy, the optional auditor mate |
-| [03 Testing](docs/03-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests, re-running a hop |
-| [04 Lessons and troubleshooting](docs/04-lessons-and-troubleshooting.md) | Symptom table, what went wrong while building this, how to read the evidence |
-| [05 Run it anywhere](docs/05-run-on-a-remote-machine.md) | Laptop, EC2 or a container: what differs per host, the tested EC2 steps, a container recipe |
+| [01 Quick start checklist](docs/01-quickstart-checklist.md) | **Start here.** Zero to first PR, one ordered list |
+| [02 How it works](docs/02-how-it-works.md) | Using it day to day: write the issue, add the label, read the PR; what happens behind the scenes; the labels |
+| [03 Delivery lifecycle reference](docs/03-delivery-lifecycle.md) | The roles, where to watch a run, trust boundaries, where it runs |
+| [04 GitHub activation](docs/04-github-activation.md) | Labels, secrets, workflow, runner, branch protection, in detail |
+| [05 Kiro Crew setup](docs/05-kiro-crew-setup.md) | Templates, webhook sources, the unattended approval policy, the optional auditor mate |
+| [06 Testing](docs/06-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests, re-running a hop |
+| [07 Run it anywhere](docs/07-run-on-a-remote-machine.md) | Laptop, EC2 or a container: what differs per host, the tested EC2 steps, a container recipe |
 | [08 Customizing the agents](docs/08-customizing-the-agents.md) | Your own prompts, other languages and tools, new roles, and the contracts you must keep |
+| [09 Lessons and troubleshooting](docs/09-lessons-and-troubleshooting.md) | Symptom table, what went wrong while building this, how to read the evidence |
 
 The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/`:
 

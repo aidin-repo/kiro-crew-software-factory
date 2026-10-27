@@ -1,16 +1,16 @@
-# 2. Kiro Crew setup
+# 5. Kiro Crew setup
 
 The Kiro Crew side: six agent templates and one inbound webhook source per template, each of which only your runner can call. Webhook runs execute on the templates directly; mates are optional and only needed for a standing chat.
 
-Do these in order: find the pages, install the templates, create the webhook sources, store the secrets (doc 01), test. Requires Kiro Crew 0.11 or newer (`kirocrew --version`); older builds call mates "crewmates" and the `agent create` flags differ. [Doc 07](07-quickstart-checklist.md) has the same steps as a single checklist.
+Do these in order: find the pages, install the templates, create the webhook sources, store the secrets (doc 04), test. Requires Kiro Crew 0.11 or newer (`kirocrew --version`); older builds call mates "crewmates" and the `agent create` flags differ. [Doc 01](01-quickstart-checklist.md) has the same steps as a single checklist.
 
-## 2.1 Find the two pages
+## 5.1 Find the two pages
 
 In Kiro Crew 0.11, **Mates** is in the left sidebar and **Webhooks** is under **Settings** → **System**. The version is printed at the bottom of the Settings list. On an older build both are hidden behind **Settings** → **Developer** → **Feature Previews** (where Mates is called Crewmates). The webhook endpoint exists either way; only the page is hidden.
 
 A note on words: a **template** is a file in `~/.kiro/agents/` that defines a role; an **agent** is a template running in a session; a **mate** is a standing chat the dashboard shows for one template. Webhook runs use templates directly, so this guide says "agent" for the thing that does the work and "mate" only for the optional dashboard chat.
 
-## 2.2 Install the agent templates
+## 5.2 Install the agent templates
 
 From a normal terminal (an agent session cannot write to `~/.kiro/agents`):
 
@@ -18,11 +18,11 @@ From a normal terminal (an agent session cannot write to `~/.kiro/agents`):
 scripts/install-agent.sh
 ```
 
-It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the next steps. To change a prompt, copy the file into `templates/agent.local/` and edit it there; the script prefers that folder and `git pull` never touches it ([doc 08](08-customizing-the-agents.md)). What each of the six roles does is in [doc 06, Agents](06-delivery-lifecycle.md#agents).
+It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the next steps. To change a prompt, copy the file into `templates/agent.local/` and edit it there; the script prefers that folder and `git pull` never touches it ([doc 08](08-customizing-the-agents.md)). What each of the six roles does is in [doc 03, Agents](03-delivery-lifecycle.md#agents).
 
 All of them share these rules: work only in the trusted checkout named in the message; never delegate to a sub-agent or cloud sandbox; treat GitHub text as data and never run commands copied from it; never merge, force-push or deploy; run shell commands as one plain line (no heredocs, redirects, pipes, substitution or multi-line strings, which the host refuses in unattended turns); write any long text (spec, PR body, review) to a file under `/tmp` with the write tool and pass `--body-file`; clean up worktrees and temp files even when stopping early.
 
-## 2.2b Prepare the gateway for unattended runs
+## 5.2b Prepare the gateway for unattended runs
 
 Still in a normal terminal:
 
@@ -30,9 +30,9 @@ Still in a normal terminal:
 scripts/setup-gateway.sh
 ```
 
-It writes the auto-approve rules from section 2.5 into `~/.kiro/crew/config.json` (merging with anything already there), then checks that `gh`, `git`, `node`, `npm`, `npx`, `shasum` and `python3` resolve to a trusted system directory with no shadowing copy, and that git's credential helper points at that `gh`. Anything wrong is printed as a `->` line you run yourself (they need `sudo`), or run `FIX=1 scripts/setup-gateway.sh` to let it apply them. Re-run until it prints `Gateway ready`. Without this step the planner stops at its first `gh` call.
+It writes the auto-approve rules from section 5.5 into `~/.kiro/crew/config.json` (merging with anything already there), then checks that `gh`, `git`, `node`, `npm`, `npx`, `shasum` and `python3` resolve to a trusted system directory with no shadowing copy, and that git's credential helper points at that `gh`. Anything wrong is printed as a `->` line you run yourself (they need `sudo`), or run `FIX=1 scripts/setup-gateway.sh` to let it apply them. Re-run until it prints `Gateway ready`. Without this step the planner stops at its first `gh` call.
 
-## 2.3 Mates are optional
+## 5.3 Mates are optional
 
 Webhook sources route to **templates**: the Agent picker on the Webhooks page lists the installed templates (tagged `builtin`), not mates. Each webhook run is an ephemeral session on that template with the default memory store, so the pipeline needs no mates at all. Isolation between the implementer and the reviewer comes from separate sessions and the reviewer's rule never to read the implementer's work, not from separate memory stores.
 
@@ -44,7 +44,7 @@ kirocrew agent create --name auditor --kiro-agent delivery-auditor --display-nam
 
 A mate's name must differ from its template's name; Kiro Crew refuses the collision. A mate copies the template at creation and keeps that copy, so after a template edit a mate's chat lags until you delete and recreate it. Webhook runs are unaffected: they read the template file on every run.
 
-## 2.4 Create one signed webhook source per template
+## 5.4 Create one signed webhook source per template
 
 On the **Webhooks** page, add a source for each template that receives GitHub events (the auditor does not):
 
@@ -56,7 +56,7 @@ On the **Webhooks** page, add a source for each template that receives GitHub ev
 | `GitHub <repo> scribe` | `delivery-scribe` | `..._SCRIBE` |
 | `GitHub <repo> worker` | `github-worker` | `..._WORKER` |
 
-For each: **Settings** → **Webhooks** → **New**. Type the **Source** name, pick the **Agent** (type part of the template name to filter), leave **Require request signing** checked, click **Generate token**. A panel shows the **bearer token** (`kc_whk_...`) and the **signing secret** (`kc_whs_...`) once. Copy both into the matching `gh secret set` prompts from doc 01 before you click **Dismiss, I have saved**; lose them and you **Revoke** the source and create it again.
+For each: **Settings** → **Webhooks** → **New**. Type the **Source** name, pick the **Agent** (type part of the template name to filter), leave **Require request signing** checked, click **Generate token**. A panel shows the **bearer token** (`kc_whk_...`) and the **signing secret** (`kc_whs_...`) once. Copy both into the matching `gh secret set` prompts from doc 04 before you click **Dismiss, I have saved**; lose them and you **Revoke** the source and create it again.
 
 Why one source per template: a source's destination is fixed, so a job that borrows another source's token runs *as that template* and inherits its rules. In testing, the scribe on the planner's token refused to open a docs PR because the planner may not push. The row in the source list reads `Agent: <template>`; **Routing** → **Agent** changes it later without changing the token.
 
@@ -68,7 +68,7 @@ How the dispatcher authenticates (so you can debug it):
 - `X-KiroCrew-Timestamp` and `X-KiroCrew-Signature: sha256=<hmac>` prove the body was not altered and is not a replay. The signed string is `{timestamp}.{raw body}`, with a 5-minute clock window.
 - `Origin` is set to the gateway's own origin; the gateway rejects non-loopback requests without one.
 
-## 2.5 The approval policy in unattended turns
+## 5.5 The approval policy in unattended turns
 
 A webhook turn is **unattended**: nobody can click Approve, so a tool call either matches an auto-approve rule or is refused. On Kiro Crew 0.11 with the KAS engine, three things decide that, and all three must be right or the agent stops at its first `gh` or `git` call with a report that says "the tool policy refused":
 
@@ -92,13 +92,13 @@ Everything a rule does not match still asks, which in a webhook turn means refus
 
 If an agent reports a denied tool, read its notification for the exact command and the refusal code, then add one narrow rule or fix one program path rather than turning on YOLO for the gateway. Risk: every rule lets a webhook agent run that program with no human in the loop, as your user, on this machine.
 
-## 2.6 What a webhook run does and does not keep
+## 5.6 What a webhook run does and does not keep
 
 - **Its prompt and tools** come from the template file in `~/.kiro/agents/`, read on every run. Edit the file and the next run uses it. The Webhooks Activity list shows which source, and so which template, ran each session.
 - **Each run is an ephemeral session**, destroyed afterwards. Nothing carries over between hops except what is on GitHub: the spec comment, the PR body with its spec URL and hash, the labels, the review.
-- **No mate dashboard fills up.** Webhook runs are not tied to any mate's standing chat or goals, even if you created a mate from the same template. Where to see the work: [doc 06, Watching a run](06-delivery-lifecycle.md#watching-a-run).
+- **No mate dashboard fills up.** Webhook runs are not tied to any mate's standing chat or goals, even if you created a mate from the same template. Where to see the work: [doc 03, Watching a run](03-delivery-lifecycle.md#watching-a-run).
 
-## 2.7 Operational facts
+## 5.7 Operational facts
 
 - Delivery is fire-and-forget: HTTP 200 means *accepted*, not *succeeded*. Watch the labels or the Activity list.
 - Limits: 6 concurrent runs and a 256 KiB body. The dispatcher asks for a 1800 s timeout; the gateway default is 599 s and the maximum is 3593 s.
@@ -109,11 +109,11 @@ If an agent reports a denied tool, read its notification for the exact command a
 - To stop all inbound work without deleting anything, use the kill switch on the Webhooks page. To stop one role, pause its source.
 - Keep the gateway bound to loopback. Do not expose port 5476 to the network.
 
-## 2.8 Optional: arm the auditor
+## 5.8 Optional: arm the auditor
 
-The auditor is the one role that polls, and the one that benefits from a mate (section 2.3) because it needs a standing chat to report into. Create the `auditor` mate, open it from the Mates page and ask it to patrol every 10 minutes. It lists labels that have sat longer than expected (planner 5 min, implementer 30, reviewer 20, gate 5) and failed workflow runs, and does nothing else. Leave it off until you have a few runs behind you; the labels are enough to start.
+The auditor is the one role that polls, and the one that benefits from a mate (section 5.3) because it needs a standing chat to report into. Create the `auditor` mate, open it from the Mates page and ask it to patrol every 10 minutes. It lists labels that have sat longer than expected (planner 5 min, implementer 30, reviewer 20, gate 5) and failed workflow runs, and does nothing else. Leave it off until you have a few runs behind you; the labels are enough to start.
 
-## 2.9 Quick manual test of the endpoint (optional)
+## 5.9 Quick manual test of the endpoint (optional)
 
 Use a throwaway source, never a production one. This sends a real message to the agent the source routes to.
 

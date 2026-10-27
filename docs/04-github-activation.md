@@ -1,18 +1,18 @@
-# 1. GitHub activation
+# 4. GitHub activation
 
 Everything GitHub needs before a label can start work. The scripts in `scripts/` do each step, and the manual equivalent is shown so you can see what they change.
 
-## 1.1 Prerequisites
+## 4.1 Prerequisites
 
 - A **private** repository you own (a personal repo, or an org repo where you are the owner/admin).
 - `gh` logged in as that owner: `gh auth login`, then `gh auth status`.
 - The dispatcher's owner check compares both the label sender and the issue author with the repository owner, so you must write the issue yourself as well as label it. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` and `labelled_pr_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is untested.
 - Admin rights on the repo (to create secrets and register a runner).
-- The templates and webhook sources from [doc 02](02-kiro-crew-setup.md), because this step stores their tokens.
+- The templates and webhook sources from [doc 05](05-kiro-crew-setup.md), because this step stores their tokens.
 
-## 1.2 Create the labels and store the secrets
+## 4.2 Create the labels and store the secrets
 
-One webhook source per template means one token and signing secret pair per template. Have the five pairs from doc 02 ready (you can skip the scribe and worker pairs if you do not want those hops).
+One webhook source per template means one token and signing secret pair per template. Have the five pairs from doc 05 ready (you can skip the scribe and worker pairs if you do not want those hops).
 
 ```bash
 export KIROCREW_WEBHOOK_TOKEN='planner token'
@@ -61,9 +61,9 @@ Which job uses which secret:
 
 A source's destination is fixed on the Kiro Crew Webhooks page, so a job that borrows another source's token runs *as that template* and inherits its rules. That is why each has its own pair: the scribe on the planner's token refused to open a docs PR because the planner may not push.
 
-Rules for the secrets: never put them in a file in the repo, never echo them, rotate by minting a new webhook source (doc 02) and re-running `setup-github.sh`.
+Rules for the secrets: never put them in a file in the repo, never echo them, rotate by minting a new webhook source (doc 05) and re-running `setup-github.sh`.
 
-## 1.3 Add the workflow, dispatcher, gate and agent templates to the repo
+## 4.3 Add the workflow, dispatcher, gate and agent templates to the repo
 
 ```bash
 scripts/install-into-repo.sh ~/code/REPO
@@ -84,11 +84,11 @@ Two settings to check before you merge:
 - **Gateway address.** The dispatcher posts to `http://127.0.0.1:5476/api/hooks/agent`. If your gateway listens on another port, add `KIROCREW_WEBHOOK_URL: http://127.0.0.1:PORT/api/hooks/agent` to each dispatch job's `env:`. Any non-loopback host is refused.
 - **CI requirement.** The `pr-gate` job sets `KIRO_GATE_REQUIRE_CI: "true"`: the gate parks a PR whose head has no CI check runs. If the repository has no CI workflow yet, set it to `"false"` so the lack of CI is a warning in the gate comment instead of a block.
 
-The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 1.5 so an agent cannot change these files without review.
+The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 4.5 so an agent cannot change these files without review.
 
 The dispatcher removes what GitHub does not show you before it reaches an agent: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters. What you read in the rendered issue is what the agent gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read. The implementer reads the spec from the planner's comment, not the issue body, and verifies that the comment's author is you.
 
-## 1.4 Register the self-hosted runner
+## 4.4 Register the self-hosted runner
 
 ```bash
 scripts/install-runner.sh OWNER/REPO
@@ -104,7 +104,7 @@ It downloads the runner, checks the SHA-256 against the release notes, refuses p
 
 Look for "Listening for Jobs". In GitHub, Settings → Actions → Runners shows the runner as **Idle** with labels `self-hosted` and `kirocrew`. A runner that is offline is not an error: the job waits in the queue until it comes back. A runner started with `./run.sh` over SSH stops when the SSH session ends.
 
-The agents run as the same user as the runner and the gateway, and use that user's `gh` login to comment, label, push branches, review and open PRs. They need `git`, `python3`, `gh`, `shasum` and the Node major your CI uses, each in `/usr/bin` (the unattended policy, [doc 02, section 2.5](02-kiro-crew-setup.md#25-the-approval-policy-in-unattended-turns); nvm switches are refused). `scripts/setup-gateway.sh` checks all of this.
+The agents run as the same user as the runner and the gateway, and use that user's `gh` login to comment, label, push branches, review and open PRs. They need `git`, `python3`, `gh`, `shasum` and the Node major your CI uses, each in `/usr/bin` (the unattended policy, [doc 05, section 5.5](05-kiro-crew-setup.md#55-the-approval-policy-in-unattended-turns); nvm switches are refused). `scripts/setup-gateway.sh` checks all of this.
 
 The implementer pushes over HTTPS with `git`, and the workflow's checkout does not leave credentials behind, so git needs a credential helper. Set it up once as that user, and again if `gh` ever moves:
 
@@ -114,7 +114,7 @@ gh auth setup-git
 
 Each run leaves a `trusted-main-<run>-<attempt>` checkout in the runner's `_work` folder, and an agent that stopped early may leave a `kiro-worktree-N` or `kiro-review-N` worktree beside it. They are small; delete old ones now and then.
 
-## 1.5 Optional hardening
+## 4.5 Optional hardening
 
 - **Protect the default branch with a ruleset** (Settings, Rules, Rulesets) that requires a pull request **with 0 required approvals** and does not let admins bypass it. Two details matter:
   - Every PR and every review is created under your own account, and GitHub does not let an author approve their own PR. That is why the reviewer posts a *comment* review with a `VERDICT:` line and the gate reads that line. "Require 1 approval" would block every merge you make, or push you to bypass it.
@@ -125,7 +125,7 @@ Each run leaves a `trusted-main-<run>-<attempt>` checkout in the runner's `_work
 - Restrict the `GITHUB_TOKEN` permissions at the repo level to read-only. The workflow declares read-only everywhere except the `pr-gate` job, which asks for `pull-requests: write` and `issues: write` to post its comment and label.
 - Use a fine-grained personal access token, scoped to the one repository, for the `gh` login the agents use.
 
-## 1.6 Optional: read-only summary on every PR push
+## 4.6 Optional: read-only summary on every PR push
 
 The template ships without it, because the reviewer already reviews each delivery PR when it is labelled `kiro-review`. The dispatcher still supports a `pr-review` mode that summarises any PR the owner pushes to, on every push. Add this trigger type and job to `.github/workflows/kiro-crew-events.yml`, then merge it to the default branch:
 
