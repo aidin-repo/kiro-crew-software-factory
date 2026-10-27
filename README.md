@@ -133,15 +133,15 @@ The numbers are the reading order: 01, then 02, then whatever you need. Opening 
 
 | Doc | What it covers |
 |---|---|
-| [07 Quick start checklist](docs/01-quickstart-checklist.md) | **Start here.** Zero to first PR, one ordered list |
-| [00 How it works](docs/02-how-it-works.md) | Using it day to day: write the issue, add the label, read the PR; what happens behind the scenes; the labels |
-| [06 Delivery lifecycle reference](docs/03-delivery-lifecycle.md) | The roles, where to watch a run, trust boundaries, where it runs |
-| [01 GitHub activation](docs/04-github-activation.md) | Labels, secrets, workflow, runner, branch protection, in detail |
-| [02 Kiro Crew setup](docs/05-kiro-crew-setup.md) | Templates, webhook sources, the unattended approval policy, the optional auditor mate |
-| [03 Testing](docs/06-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests, re-running a hop |
-| [04 Lessons and troubleshooting](docs/09-lessons-and-troubleshooting.md) | Symptom table, what went wrong while building this, how to read the evidence |
-| [05 Run it anywhere](docs/07-run-on-a-remote-machine.md) | Laptop, EC2 or a container: what differs per host, the tested EC2 steps, a container recipe |
+| [01 Quick start checklist](docs/01-quickstart-checklist.md) | **Start here.** Zero to first PR, one ordered list |
+| [02 How it works](docs/02-how-it-works.md) | Using it day to day: write the issue, add the label, read the PR; what happens behind the scenes; the labels |
+| [03 Delivery lifecycle reference](docs/03-delivery-lifecycle.md) | The roles, where to watch a run, trust boundaries, where it runs |
+| [04 GitHub activation](docs/04-github-activation.md) | Labels, secrets, workflow, runner, branch protection, in detail |
+| [05 Kiro Crew setup](docs/05-kiro-crew-setup.md) | Templates, webhook sources, the unattended approval policy, the optional auditor mate |
+| [06 Testing](docs/06-testing.md) | Unit tests, preflight, smoke test, sample issues, negative tests, re-running a hop |
+| [07 Run it anywhere](docs/07-run-on-a-remote-machine.md) | Laptop, EC2 or a container: what differs per host, the tested EC2 steps, a container recipe |
 | [08 Customizing the agents](docs/08-customizing-the-agents.md) | Your own prompts, other languages and tools, new roles, and the contracts you must keep |
+| [09 Lessons and troubleshooting](docs/09-lessons-and-troubleshooting.md) | Symptom table, what went wrong while building this, how to read the evidence |
 
 The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/`:
 
