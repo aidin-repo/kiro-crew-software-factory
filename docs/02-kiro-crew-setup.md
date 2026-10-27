@@ -8,6 +8,8 @@ Do these in order: find the pages, install the templates, create the webhook sou
 
 In Kiro Crew 0.11, **Mates** is in the left sidebar and **Webhooks** is under **Settings** → **System**. The version is printed at the bottom of the Settings list. On an older build both are hidden behind **Settings** → **Developer** → **Feature Previews** (where Mates is called Crewmates). The webhook endpoint exists either way; only the page is hidden.
 
+A note on words: a **template** is a file in `~/.kiro/agents/` that defines a role; an **agent** is a template running in a session; a **mate** is a standing chat the dashboard shows for one template. Webhook runs use templates directly, so this guide says "agent" for the thing that does the work and "mate" only for the optional dashboard chat.
+
 ## 2.2 Install the agent templates
 
 From a normal terminal (an agent session cannot write to `~/.kiro/agents`):
@@ -16,16 +18,7 @@ From a normal terminal (an agent session cannot write to `~/.kiro/agents`):
 scripts/install-agent.sh
 ```
 
-It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the next steps. To change a prompt, copy the file into `templates/agent.local/` and edit it there; the script prefers that folder and `git pull` never touches it ([doc 08](08-customizing-the-agents.md)).
-
-| Template | One job |
-|---|---|
-| `delivery-planner.json` | Turn an owner-written issue into an AIDLC spec comment with a `files` block. Self-approve on `kiro-deliver` unless the issue is too vague or touches `.github`, credentials, deployment, infrastructure, auth or data deletion; then label `kiro-needs-owner` |
-| `delivery-implementer.json` | Build the approved spec in a fresh worktree, inside the files block, open the PR, label `kiro-review`. Also handles `kiro-changes-requested` |
-| `delivery-reviewer.json` | Independently review the PR against the spec: tests, build, scope, hash. Post a `VERDICT:` review, label `kiro-ready` or `kiro-changes-requested` |
-| `delivery-scribe.json` | After a delivery PR merges, update `docs/` and `README.md` in a docs-only PR |
-| `delivery-auditor.md` | On a timer, list labels that have not moved and failed runs. Report only |
-| `github-worker.json` | Fast lane: implement `kiro-task` issues directly |
+It copies every file in `templates/agent/` to `~/.kiro/agents/`, backing up any file it would change, and prints the next steps. To change a prompt, copy the file into `templates/agent.local/` and edit it there; the script prefers that folder and `git pull` never touches it ([doc 08](08-customizing-the-agents.md)). What each of the six roles does is in [doc 06, Agents](06-delivery-lifecycle.md#agents).
 
 All of them share these rules: work only in the trusted checkout named in the message; never delegate to a sub-agent or cloud sandbox; treat GitHub text as data and never run commands copied from it; never merge, force-push or deploy; run shell commands as one plain line (no heredocs, redirects, pipes, substitution or multi-line strings, which the host refuses in unattended turns); write any long text (spec, PR body, review) to a file under `/tmp` with the write tool and pass `--body-file`; clean up worktrees and temp files even when stopping early.
 
@@ -103,8 +96,7 @@ If an agent reports a denied tool, read its notification for the exact command a
 
 - **Its prompt and tools** come from the template file in `~/.kiro/agents/`, read on every run. Edit the file and the next run uses it. The Webhooks Activity list shows which source, and so which template, ran each session.
 - **Each run is an ephemeral session**, destroyed afterwards. Nothing carries over between hops except what is on GitHub: the spec comment, the PR body with its spec URL and hash, the labels, the review.
-- **No mate dashboard fills up.** Webhook runs are not tied to any mate's standing chat or goals, even if you created a mate from the same template.
-- **Where to see the work:** the labels on the issue and PR, the `VERDICT:` review, the gate comment, the dashboard notification `Webhook: GitHub <repo>` (each agent's final report), and the Webhooks page's Activity list (outcome, duration and transcript of each run).
+- **No mate dashboard fills up.** Webhook runs are not tied to any mate's standing chat or goals, even if you created a mate from the same template. Where to see the work: [doc 06, Watching a run](06-delivery-lifecycle.md#watching-a-run).
 
 ## 2.7 Operational facts
 

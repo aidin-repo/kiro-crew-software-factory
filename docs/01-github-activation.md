@@ -6,7 +6,7 @@ Everything GitHub needs before a label can start work. The scripts in `scripts/`
 
 - A **private** repository you own (a personal repo, or an org repo where you are the owner/admin).
 - `gh` logged in as that owner: `gh auth login`, then `gh auth status`.
-- The dispatcher's owner check compares both the label sender and the issue author with the repository owner, so you must write the issue yourself as well as label it. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` and `labelled_pr_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is not tested here.
+- The dispatcher's owner check compares both the label sender and the issue author with the repository owner, so you must write the issue yourself as well as label it. In an organization, the owner login is the **org**, and a person is never equal to it, so this design as written only works for **user-owned repositories**. For an org repo, change `approving_owner()` and `labelled_pr_owner()` in `dispatch_kiro_event.py` to check an allowlist of maintainers. That change is untested.
 - Admin rights on the repo (to create secrets and register a runner).
 - The templates and webhook sources from [doc 02](02-kiro-crew-setup.md), because this step stores their tokens.
 
@@ -76,7 +76,7 @@ This copies the files below and prints the commit commands. It does not commit f
 | `.github/workflows/kiro-crew-events.yml` | One job per lifecycle label, all on the `kirocrew` runner; triggers on `issues: labeled` and `pull_request_target: labeled, closed` |
 | `.github/scripts/dispatch_kiro_event.py` | Validates the event, wraps GitHub text as untrusted data, signs and sends the webhook |
 | `.github/scripts/kiro_gate.py` | The deterministic merge gate, run by the `pr-gate` job with a write token |
-| `.github/scripts/tests/test_dispatch_kiro_event.py`, `test_kiro_gate.py` | Unit tests (134) |
+| `.github/scripts/tests/test_dispatch_kiro_event.py`, `test_kiro_gate.py` | Unit tests for both scripts |
 | `.github/kiro-agents/*.json`, `*.md` | The agent prompts, versioned with the code they act on |
 
 Two settings to check before you merge:
@@ -86,7 +86,7 @@ Two settings to check before you merge:
 
 The workflow only fires from the **default branch**, so merge the PR before testing. After that, protect the default branch as described in section 1.5 so an agent cannot change these files without review.
 
-The dispatcher removes what GitHub does not show you before it reaches an agent: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters. What you read in the rendered issue is what the mate gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read. The implementer reads the spec from the planner's comment, not the issue body, and verifies that the comment's author is you.
+The dispatcher removes what GitHub does not show you before it reaches an agent: HTML comments (`<!-- ... -->`) and invisible or text-direction-control characters. What you read in the rendered issue is what the agent gets. Anyone with write access can still edit an issue after you label it, so label only issues you have just read. The implementer reads the spec from the planner's comment, not the issue body, and verifies that the comment's author is you.
 
 ## 1.4 Register the self-hosted runner
 
@@ -94,35 +94,23 @@ The dispatcher removes what GitHub does not show you before it reaches an agent:
 scripts/install-runner.sh OWNER/REPO
 ```
 
-It downloads the runner, checks the SHA-256 against the release notes, refuses public repos, and registers the runner with the label `kirocrew`. Then start it in a terminal you keep open, and look for "Listening for Jobs":
+It downloads the runner, checks the SHA-256 against the release notes, refuses public repos, and registers the runner with the label `kirocrew`. Start it in one of three ways; `SERVICE=1 scripts/install-runner.sh OWNER/REPO` installs it as a LaunchAgent (macOS) or systemd unit (Linux) so it survives logout:
 
-```bash
-cd ~/actions-runner-kirocrew
-```
+| Where | Command |
+|---|---|
+| Trying it out | `cd ~/actions-runner-kirocrew && ./run.sh` in a terminal you keep open |
+| For good | `SERVICE=1 scripts/install-runner.sh OWNER/REPO` |
+| Container, no systemd | `cd ~/actions-runner-kirocrew && nohup ./run.sh > runner.log 2>&1 &` |
 
-```bash
-./run.sh
-```
+Look for "Listening for Jobs". In GitHub, Settings → Actions → Runners shows the runner as **Idle** with labels `self-hosted` and `kirocrew`. A runner that is offline is not an error: the job waits in the queue until it comes back. A runner started with `./run.sh` over SSH stops when the SSH session ends.
 
-Run these as separate lines with no trailing `# comment`: an interactive zsh treats the comment as extra arguments. In GitHub, Settings, Actions, Runners should show the runner as **Idle** with labels `self-hosted` and `kirocrew`.
+The agents run as the same user as the runner and the gateway, and use that user's `gh` login to comment, label, push branches, review and open PRs. They need `git`, `python3`, `gh`, `shasum` and the Node major your CI uses, each in `/usr/bin` (the unattended policy, [doc 02, section 2.5](02-kiro-crew-setup.md#25-the-approval-policy-in-unattended-turns); nvm switches are refused). `scripts/setup-gateway.sh` checks all of this.
 
-To keep it running after you close the terminal or reboot:
-
-```bash
-cd ~/actions-runner-kirocrew && ./svc.sh install && ./svc.sh start
-```
-
-On macOS that installs a LaunchAgent, which runs while you are logged in. A runner that is offline is not an error: the job just waits in the queue until it comes back.
-
-The runner needs these on its `PATH`: `git`, `python3`, `node` (the version your CI uses, via nvm if you like), and `gh` logged in as the repo owner. The agents use your `gh` credentials to comment, label, push branches, review and open PRs.
-
-The implementer pushes over HTTPS with `git`, and the workflow's checkout does not leave credentials behind, so git needs a credential helper. Set it up once as the same user that runs the gateway:
+The implementer pushes over HTTPS with `git`, and the workflow's checkout does not leave credentials behind, so git needs a credential helper. Set it up once as that user, and again if `gh` ever moves:
 
 ```bash
 gh auth setup-git
 ```
-
-`scripts/preflight.sh` warns when no helper is configured.
 
 Each run leaves a `trusted-main-<run>-<attempt>` checkout in the runner's `_work` folder, and an agent that stopped early may leave a `kiro-worktree-N` or `kiro-review-N` worktree beside it. They are small; delete old ones now and then.
 

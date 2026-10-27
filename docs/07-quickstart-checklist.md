@@ -2,7 +2,7 @@
 
 One ordered list. Tick each box before the next. If you have never used Kiro Crew or a self-hosted runner, budget about an hour; most of it is waiting for downloads and copying tokens.
 
-Where a step is dashboard-only, a screenshot placeholder shows what you should see. Everything else is a command you paste into a normal terminal (not an agent chat; `~/.kiro/agents` and config files are protected from agent sessions).
+Where a step is dashboard-only, a screenshot shows what you should see. Everything else is a command you paste into a normal terminal (not an agent chat; `~/.kiro/agents` and config files are protected from agent sessions).
 
 ## 0. Prerequisites
 
