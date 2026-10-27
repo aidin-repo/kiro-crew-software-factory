@@ -103,7 +103,7 @@ done
 
 if [[ -z "$PR_URL" ]]; then
   echo "FAIL  no PR appeared for kiro/issue-$NUMBER within ${TIMEOUT_SECS}s"
-  echo "      Check: Actions tab (job queued = runner offline), issue labels, Kiro Crew notifications, docs/04"
+  echo "      Check: Actions tab (job queued = runner offline), issue labels, Kiro Crew notifications, docs/09"
   exit 1
 fi
 
@@ -135,6 +135,6 @@ fi
 if [[ "$RESULT" -eq 0 ]]; then
   echo "PASS  lifecycle complete for issue #$NUMBER"
 else
-  echo "FAIL  see the stages above; docs/04-lessons-and-troubleshooting.md"
+  echo "FAIL  see the stages above; docs/09-lessons-and-troubleshooting.md"
 fi
 exit "$RESULT"

@@ -50,5 +50,5 @@ Review, test and merge (the workflow only fires from the default branch):
   gh pr create --fill
 
 Protect the default branch so the agent cannot change these files unreviewed. Use a
-ruleset that requires a pull request and does NOT let admins bypass it (docs/01, section 1.5).
+ruleset that requires a pull request and does NOT let admins bypass it (docs/04, section 4.5).
 EOF

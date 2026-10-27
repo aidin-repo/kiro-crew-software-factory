@@ -33,7 +33,7 @@ To see what a shipped update changed before adopting it:
 git diff HEAD@{1} -- templates/agent/
 ```
 
-Edits take effect on the next run. Webhook runs read `~/.kiro/agents/<role>.json` every time; nothing is cached. Mates, if you created any, copy the template at creation and must be recreated to pick up a change (doc 02, section 2.3).
+Edits take effect on the next run. Webhook runs read `~/.kiro/agents/<role>.json` every time; nothing is cached. Mates, if you created any, copy the template at creation and must be recreated to pick up a change (doc 05, section 5.3).
 
 ## 8.3 Make it fit your stack
 
@@ -45,7 +45,7 @@ The shipped prompts and dispatcher texts are written for a Node repository (`npm
 | `.github/scripts/dispatch_kiro_event.py`, `instructions()` for `pr-review-round` | `npm ci --ignore-scripts` |
 | `~/.kiro/crew/config.json`, `hooks.auto_approve_tools` | one rule per program the agents will run (`pytest *`, `uv *`, `cargo *`, `go *`, `make *`) |
 
-And one rule with no file: **every program must be in `/usr/bin` (or `/bin`), unshadowed**, or the unattended turn refuses it (doc 02, section 2.5). `python3 -m pytest` works where `pytest` from a `.venv` does not, because `/usr/bin/python3` is trusted and `.venv/bin/pytest` is not. A project-local tool (`node_modules/.bin/vitest`) is fine when called through `npx`, because `npx` is the program the host checks.
+And one rule with no file: **every program must be in `/usr/bin` (or `/bin`), unshadowed**, or the unattended turn refuses it (doc 05, section 5.5). `python3 -m pytest` works where `pytest` from a `.venv` does not, because `/usr/bin/python3` is trusted and `.venv/bin/pytest` is not. A project-local tool (`node_modules/.bin/vitest`) is fine when called through `npx`, because `npx` is the program the host checks.
 
 Worked example, a Python repository with pytest and ruff:
 
@@ -58,7 +58,7 @@ Repository-specific rules (which folders are off limits, how to name branches, w
 
 ## 8.4 Change what a role may do
 
-`tools` is what the agent can see; `allowedTools` is what kiro-cli would auto-approve on an interactive surface. In a webhook run neither grants shell or file access by itself (doc 02, section 2.5): a call runs only if a `hooks.auto_approve_tools` rule matches it and the program is trusted. So:
+`tools` is what the agent can see; `allowedTools` is what kiro-cli would auto-approve on an interactive surface. In a webhook run neither grants shell or file access by itself (doc 05, section 5.5): a call runs only if a `hooks.auto_approve_tools` rule matches it and the program is trusted. So:
 
 - To **give** a role a new ability: add the tool to `tools` and `allowedTools`, add a rule for the program, make sure the program is in `/usr/bin`.
 - To **take away** an ability: remove the tool from `tools`. The planner, for instance, has `write` only so it can create the spec file under `/tmp`; its prompt forbids writing anywhere else, and the gate would reject a PR touching files outside the `files` block anyway, but removing `write` from the reviewer would stop it from creating its review body file.
@@ -91,7 +91,7 @@ Other parts parse these. Changing one without changing its reader breaks the cha
 | Gate comment marker `<!-- kiro-gate -->` | gate | smoke test, humans |
 | Label names (`kiro-plan` ... `kiro-parked`) and branch names `kiro/issue-N`, `kiro/docs-pr-N` | all | workflow triggers, dispatcher label table, gate, smoke test |
 | Owner checks: issue author, label sender, PR branch, PR open | dispatcher | the security model; do not loosen |
-| Plain one-line shell, long text via the write tool and `--body-file`, programs in `/usr/bin` with a rule | templates | the unattended policy (doc 02, section 2.5) |
+| Plain one-line shell, long text via the write tool and `--body-file`, programs in `/usr/bin` with a rule | templates | the unattended policy (doc 05, section 5.5) |
 | `MAX_REVIEW_ROUNDS` | dispatcher | `pr-changes`; the cap that stops a review loop |
 
 If you rename a label, change it in the workflow `if:` conditions, the dispatcher's label table, `kiro_gate.py`, `scripts/setup-github.sh`, `scripts/preflight.sh` and `scripts/smoke-test.sh` together.
@@ -101,5 +101,5 @@ If you rename a label, change it in the workflow `if:` conditions, the dispatche
 1. Edit the local template, `scripts/install-agent.sh`.
 2. `scripts/preflight.sh OWNER/REPO` (checks the template is installed and the rules exist).
 3. One small issue with `kiro-task` (fast lane, one hop) or `kiro-deliver` (all hops). `CLEANUP=1 scripts/smoke-test.sh OWNER/REPO` does this for you with a one-line docs change.
-4. Read the dashboard notification for the run. It names every refused command with its code. The security log has the full list (doc 04, "Reading the evidence yourself").
+4. Read the dashboard notification for the run. It names every refused command with its code. The security log has the full list (doc 09, "Reading the evidence yourself").
 5. If an agent stopped at a refusal, fix the rule or the program path, delete `kiro/issue-N` if a branch was pushed, and re-apply the label.

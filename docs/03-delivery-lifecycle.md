@@ -1,6 +1,6 @@
-# 6. Delivery lifecycle reference
+# 3. Delivery lifecycle reference
 
-One agent, one job. Every handoff is a GitHub label event. Nothing polls except the auditor, whose only job is to notice a stall. This page is the reference for the roles, the trust boundaries and where things run. The walkthrough with diagrams is [doc 00](00-how-it-works.md); setup is [doc 07](07-quickstart-checklist.md).
+One agent, one job. Every handoff is a GitHub label event. Nothing polls except the auditor, whose only job is to notice a stall. This page is the reference for the roles, the trust boundaries and where things run. The walkthrough with diagrams is [doc 02](02-how-it-works.md); setup is [doc 01](01-quickstart-checklist.md).
 
 ## Agents
 
@@ -14,7 +14,7 @@ One agent, one job. Every handoff is a GitHub label event. Nothing polls except 
 | delivery-auditor (as the `auditor` mate) | timer | Lists stuck labels and failed runs | nothing (reports only) |
 | github-worker | `kiro-task` on an issue | Fast lane, no spec, no review | PR |
 
-Each role is its own webhook source on the Kiro Crew Webhooks page, routed to its own template, so a job never runs with another role's rules. Each run is an ephemeral session; the reviewer never reads the implementer's session and judges only what is on GitHub. The labels each role reads and writes are listed in [doc 00](00-how-it-works.md#the-labels).
+Each role is its own webhook source on the Kiro Crew Webhooks page, routed to its own template, so a job never runs with another role's rules. Each run is an ephemeral session; the reviewer never reads the implementer's session and judges only what is on GitHub. The labels each role reads and writes are listed in [doc 02](02-how-it-works.md#the-labels).
 
 ## Watching a run
 
@@ -29,7 +29,7 @@ You do not need any dashboard. The labels are the status:
 | A hop did not fire | Actions tab, workflow "Kiro Crew delivery lifecycle"; each job is one hop |
 | What an agent reported | Dashboard notification "Webhook: GitHub <repo>" |
 | Full transcript | Dashboard, Settings → Webhooks, Activity, click the run |
-| Every tool call and refusal | `~/.kiro/crew/security_events.jsonl` ([doc 04](04-lessons-and-troubleshooting.md#reading-the-evidence-yourself)) |
+| Every tool call and refusal | `~/.kiro/crew/security_events.jsonl` ([doc 09](09-lessons-and-troubleshooting.md#reading-the-evidence-yourself)) |
 
 Typical timings: planner 30 to 90 s, implementer 2 to 5 min, reviewer 1 to 3 min, gate seconds. Label to `kiro-ready-to-merge` in 4 to 8 minutes.
 
@@ -49,4 +49,4 @@ The [README's Security model](../README.md#security-model) is the summary; these
 
 ## Where it runs
 
-Everything runs on the machine that hosts the self-hosted runner and the Kiro Crew gateway: the Actions jobs (which only validate the event and POST a signed webhook to `127.0.0.1`), the agents, their worktrees, tests and git pushes. GitHub stores issues, labels, branches and PRs and fires the events; the project's own `ci.yml` may run on GitHub-hosted runners and the gate reads its results through the API. If the machine is off, labels wait in the Actions queue until it is back. That machine can be a laptop, an EC2 instance or a container ([doc 05](05-run-on-a-remote-machine.md)).
+Everything runs on the machine that hosts the self-hosted runner and the Kiro Crew gateway: the Actions jobs (which only validate the event and POST a signed webhook to `127.0.0.1`), the agents, their worktrees, tests and git pushes. GitHub stores issues, labels, branches and PRs and fires the events; the project's own `ci.yml` may run on GitHub-hosted runners and the gate reads its results through the API. If the machine is off, labels wait in the Actions queue until it is back. That machine can be a laptop, an EC2 instance or a container ([doc 07](07-run-on-a-remote-machine.md)).

@@ -1,8 +1,8 @@
-# 3. How to test
+# 6. How to test
 
 Test in layers, cheapest first. Stop at the first failure.
 
-## 3.1 Unit tests (no network, seconds)
+## 6.1 Unit tests (no network, seconds)
 
 From the folder of this package, use a virtual environment. A plain `pip install` fails on Homebrew and other system Pythons that block installs outside one:
 
@@ -30,7 +30,7 @@ python3 -m pytest .github/scripts/tests -q
 
 The dispatcher tests cover: GitHub text stays out of the trusted fields; hidden HTML comments and invisible characters are removed; wrong event, action, label or repository is refused; a label from a non-owner, an issue written by someone else, a closed issue, a malformed sender or owner is refused; PR-label modes refuse other actors, forks, non-delivery branches and closed PRs; each mode's instructions carry its rules (files block, spec hash, round limit, shell rule, cleanup, CI fallback); the gate mode is never sent to an agent; and the request is signed over the exact body, ignores proxy settings and never follows a redirect. The gate tests cover the files-block parser, scope and deny-list matching, verdict and head-SHA parsing, round counting, spec reference parsing, the lifecycle check-run filter, every pass and park decision, and an end-to-end run against a fake GitHub API.
 
-## 3.2 Preflight (read-only)
+## 6.2 Preflight (read-only)
 
 ```bash
 scripts/preflight.sh OWNER/REPO
@@ -38,7 +38,7 @@ scripts/preflight.sh OWNER/REPO
 
 Checks tools, `gh` login, repo visibility, all ten labels, the secrets, the workflow and scripts on the default branch, an online runner labelled `kirocrew`, the gateway on `127.0.0.1:5476`, and the installed templates. It changes nothing. Fix every FAIL before continuing.
 
-## 3.3 Smoke test (creates real GitHub objects)
+## 6.3 Smoke test (creates real GitHub objects)
 
 Make sure the runner is online (`./run.sh` in a terminal, or the service) and `scripts/setup-gateway.sh` printed `Gateway ready`, then:
 
@@ -50,9 +50,9 @@ It creates a small issue, applies `kiro-deliver` as the owner, and polls the lab
 
 `MODE=task` runs the fast-lane variant instead: `kiro-task`, wait for a PR, check it touches exactly one file.
 
-Where to watch it and how long each hop takes: [doc 06, Watching a run](06-delivery-lifecycle.md#watching-a-run). In the Actions tab expect one run per hop (`issue-deliver`, `issue-implement`, `pr-review-round`, `pr-gate`), every other job skipped.
+Where to watch it and how long each hop takes: [doc 03, Watching a run](03-delivery-lifecycle.md#watching-a-run). In the Actions tab expect one run per hop (`issue-deliver`, `issue-implement`, `pr-review-round`, `pr-gate`), every other job skipped.
 
-## 3.4 A realistic sample issue
+## 6.4 A realistic sample issue
 
 Describe behaviour and acceptance; let the planner find the files. Create the issue with the label, or add it after.
 
@@ -83,11 +83,11 @@ Pass criteria:
 
 Read the diff yourself before merging. The tests prove the change passes its own checks, not that it fits your app.
 
-## 3.5 A spec-only sample
+## 6.5 A spec-only sample
 
 Use `kiro-plan` instead of `kiro-deliver` to get the specification without approval. Read the comment, edit the issue if the spec is wrong, and apply `kiro-approved` yourself when you are satisfied. The rest of the lifecycle is identical.
 
-## 3.6 Negative tests: prove the guardrails
+## 6.6 Negative tests: prove the guardrails
 
 | Test | How | Expected |
 |---|---|---|
@@ -108,7 +108,7 @@ Use `kiro-plan` instead of `kiro-deliver` to get the specification without appro
 
 Run the hostile-body and infra tests on a throwaway repo with nothing valuable checked out.
 
-## 3.7 Re-running a hop
+## 6.7 Re-running a hop
 
 Every hop is a label, so re-running one is removing and re-adding its label as the owner:
 

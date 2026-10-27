@@ -1,4 +1,4 @@
-# 0. How it works
+# 2. How it works
 
 You write a GitHub issue and add one label. Five small Kiro Crew agents, running on your own machine, take it from there: one writes a specification, one implements it, one reviews it independently, a script checks the result, and one updates the docs after you merge. Each hands off to the next through a GitHub label. You read the final pull request and decide whether to merge.
 
@@ -79,8 +79,8 @@ Everything runs on your machine with your GitHub login, so the PR, the review an
 
 ## Things to know
 
-- **You can't steer a run.** Each hop is unattended and ephemeral. PR comments do not reach an agent; labels do. To get another review round after you edit the branch yourself, remove and re-add `kiro-review` ([doc 03, section 3.7](03-testing.md#37-re-running-a-hop)).
+- **You can't steer a run.** Each hop is unattended and ephemeral. PR comments do not reach an agent; labels do. To get another review round after you edit the branch yourself, remove and re-add `kiro-review` ([doc 06, section 6.7](06-testing.md#67-re-running-a-hop)).
 - **It stays in scope.** The spec lists the files that may change; the implementer stays inside them and the gate parks any PR that does not. Agents refuse instructions in the issue to run commands, change workflows, or touch credentials or infrastructure.
-- **Where to watch it:** [doc 06, Watching a run](06-delivery-lifecycle.md#watching-a-run). The other limits (machine must be on, one branch per issue, private repo only) are in the [README](../README.md#limitations).
+- **Where to watch it:** [doc 03, Watching a run](03-delivery-lifecycle.md#watching-a-run). The other limits (machine must be on, one branch per issue, private repo only) are in the [README](../README.md#limitations).
 
-Setup from scratch: [07 Quick start checklist](07-quickstart-checklist.md). Reference: [06 Delivery lifecycle](06-delivery-lifecycle.md), [01 GitHub activation](01-github-activation.md), [02 Kiro Crew setup](02-kiro-crew-setup.md). Testing: [03](03-testing.md). Not your laptop: [05](05-run-on-a-remote-machine.md).
+Setup from scratch: [07 Quick start checklist](01-quickstart-checklist.md). Reference: [06 Delivery lifecycle](03-delivery-lifecycle.md), [01 GitHub activation](04-github-activation.md), [02 Kiro Crew setup](05-kiro-crew-setup.md). Testing: [03](06-testing.md). Not your laptop: [05](07-run-on-a-remote-machine.md).

@@ -1,4 +1,4 @@
-# 7. Quick start checklist: zero to first pull request
+# 1. Quick start checklist: zero to first pull request
 
 One ordered list. Tick each box before the next. If you have never used Kiro Crew or a self-hosted runner, budget about an hour; most of it is waiting for downloads and copying tokens.
 
@@ -6,9 +6,9 @@ Where a step is dashboard-only, a screenshot shows what you should see. Everythi
 
 ## 0. Prerequisites
 
-- [ ] **A private GitHub repository you own personally.** Org-owned repos do not work as written (doc 01, section 1.1). The setup scripts refuse public repos.
-- [ ] **Kiro Crew 0.11 or newer**, installed and running on the machine that will do the work: your laptop, an EC2 instance, or a container (doc 05 has the per-host differences). Check: `kirocrew --version`. Older builds call mates "crewmates" and lack `--display-name`; the mate names in this guide may need adjusting there.
-- [ ] **`sudo` on that machine** (Linux), or the ability to rebuild the image (container). Step 2b moves `gh` and Node into `/usr/bin`. On macOS no sudo is needed, but see doc 05, section 5.4.
+- [ ] **A private GitHub repository you own personally.** Org-owned repos do not work as written (doc 04, section 4.1). The setup scripts refuse public repos.
+- [ ] **Kiro Crew 0.11 or newer**, installed and running on the machine that will do the work: your laptop, an EC2 instance, or a container (doc 07 has the per-host differences). Check: `kirocrew --version`. Older builds call mates "crewmates" and lack `--display-name`; the mate names in this guide may need adjusting there.
+- [ ] **`sudo` on that machine** (Linux), or the ability to rebuild the image (container). Step 2b moves `gh` and Node into `/usr/bin`. On macOS no sudo is needed, but see doc 07, section 7.4.
 - [ ] **Kiro Crew signed in to a model.** Open any chat and send "hello". If it answers, you are signed in.
 - [ ] **`gh` logged in as the repository owner:** `gh auth status`. Use a fine-grained token scoped to the one repository if you can.
 - [ ] **`git`, `python3`, `curl` on PATH.** Check with `git --version && python3 --version && curl --version`.
@@ -47,7 +47,7 @@ Webhook runs have nobody to click Approve. Without this step the planner stops a
   scripts/setup-gateway.sh
   ```
 
-  It writes the auto-approve rules into `~/.kiro/crew/config.json` and checks that `gh`, `git`, `node`, `npm`, `npx`, `shasum`, `python3` live in `/usr/bin` with no copy earlier on `PATH`. Run every `->` line it prints (they need `sudo`), then re-run until it says `Gateway ready`. Details and the macOS exception: doc 02, section 2.5; per-host steps: doc 05.
+  It writes the auto-approve rules into `~/.kiro/crew/config.json` and checks that `gh`, `git`, `node`, `npm`, `npx`, `shasum`, `python3` live in `/usr/bin` with no copy earlier on `PATH`. Run every `->` line it prints (they need `sudo`), then re-run until it says `Gateway ready`. Details and the macOS exception: doc 05, section 5.5; per-host steps: doc 07.
 
 - [ ] `node --version` prints the Node major your repository's CI uses.
 
@@ -162,7 +162,7 @@ Alternative for the secrets: export all ten as environment variables and let `sc
 
 ## 8. First real issue
 
-- [ ] Write an issue with **What**, **Why** and **Acceptance** sections (doc 00 has an example). Add the `kiro-deliver` label.
+- [ ] Write an issue with **What**, **Why** and **Acceptance** sections (doc 02 has an example). Add the `kiro-deliver` label.
 - [ ] Watch the labels. When the PR reads `kiro-ready-to-merge`, open it, read the `VERDICT:` review and the gate comment, read the diff, merge.
 
   ![The reviewer's comment review: VERDICT approve, HEAD REVIEWED, then numbered findings](images/08a-pr-verdict.png)
@@ -179,8 +179,8 @@ Alternative for the secrets: export all ten as environment variables and let `sc
 | Issue has `kiro-needs-owner` | The planner held. Read its comment's Open questions, then apply `kiro-approved` yourself |
 | `kiro-approved` but no PR after 10 min | Actions: `issue-implement` result. Dashboard notification: the implementer's report |
 | PR stuck at `kiro-review` after 10 min | Dashboard notification from the reviewer; re-add the label to retry |
-| Any hop's notification says "the tool policy refused" a command | `scripts/setup-gateway.sh` again; doc 02, section 2.5 names each refusal code. Delete `kiro/issue-N` before re-labelling `kiro-approved` |
+| Any hop's notification says "the tool policy refused" a command | `scripts/setup-gateway.sh` again; doc 05, section 5.5 names each refusal code. Delete `kiro/issue-N` before re-labelling `kiro-approved` |
 | PR has `kiro-parked` | The gate comment lists each failed check |
 | A prompt change you made is not picked up | Edit the file in `~/.kiro/agents/`; the next webhook run reads it. No restart or mate step is needed. To keep the change across updates, put it in `templates/agent.local/` (doc 08) |
 
-Full troubleshooting: [doc 04](04-lessons-and-troubleshooting.md). How each piece works: [doc 06](06-delivery-lifecycle.md).
+Full troubleshooting: [doc 09](09-lessons-and-troubleshooting.md). How each piece works: [doc 03](03-delivery-lifecycle.md).

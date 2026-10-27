@@ -1,10 +1,10 @@
-# 5. Run it anywhere: laptop, EC2, or a container
+# 7. Run it anywhere: laptop, EC2, or a container
 
 Everything in this package runs on **one machine**: the Kiro Crew gateway, the GitHub Actions runner and the agent templates. That machine can be your laptop, an EC2 instance or dev box that runs Kiro Crew, or a container. The steps are the same everywhere; what differs is how you keep the gateway and runner alive and where the programs the agents call live.
 
 > **Status.** Verified end to end on a Mac laptop (rounds 1 and 2) and on an EC2 instance, Amazon Linux 2023 arm64, Kiro Crew 0.11.0 (round 3, 2026-10-27, issue to `kiro-ready-to-merge` in about 7 minutes). The container section follows the same rules but has not been run end to end yet; treat it as a recipe to verify with `scripts/smoke-test.sh`.
 
-## 5.1 Why everything must be on the same machine
+## 7.1 Why everything must be on the same machine
 
 - The webhook endpoint listens on **loopback only** (`127.0.0.1:5476`). The dispatcher refuses any other address, and you should never expose the port.
 - The runner calls the gateway on `127.0.0.1`, so the runner and the gateway share a machine (or a container network namespace).
@@ -12,7 +12,7 @@ Everything in this package runs on **one machine**: the Kiro Crew gateway, the G
 
 So each machine needs its own gateway, its own templates, its own **webhook sources** and its own runner. Nothing carries over from another machine, including every webhook token and signing secret: a source belongs to the gateway that minted it. If you move the pipeline to a new machine, create five new sources there and re-run `scripts/setup-github.sh`, or every hop gets HTTP 401. One machine per repository.
 
-## 5.2 What every machine needs
+## 7.2 What every machine needs
 
 | Need | Notes |
 |---|---|
@@ -20,11 +20,11 @@ So each machine needs its own gateway, its own templates, its own **webhook sour
 | `gh` logged in as the repo owner | Use a fine-grained token scoped to one repository. Log in yourself in the machine's terminal |
 | `git`, `python3`, `curl`, `shasum` | `shasum` is missing on Amazon Linux (`perl-Digest-SHA`) and minimal Debian (`perl`) |
 | The Node major your repo's CI uses | The agents run your tests. Vite 7 needs Node 20+; Amazon Linux ships Node 18 as `/usr/bin/node` |
-| **All of the above in `/usr/bin` (or `/bin`), unshadowed** | The unattended-turn policy trusts only system directories; see doc 02, section 2.5. `scripts/setup-gateway.sh` checks and prints the fix |
+| **All of the above in `/usr/bin` (or `/bin`), unshadowed** | The unattended-turn policy trusts only system directories; see doc 05, section 5.5. `scripts/setup-gateway.sh` checks and prints the fix |
 | Outbound internet only | The runner and `gh` make outbound connections. **No inbound port** |
 | The same user for gateway and runner | The agents write into the runner's checkout |
 
-## 5.3 What differs per host
+## 7.3 What differs per host
 
 | | Laptop (macOS) | EC2 / Linux box | Container |
 |---|---|---|---|
@@ -36,13 +36,13 @@ So each machine needs its own gateway, its own templates, its own **webhook sour
 | Sandbox | built in | `kirocrew doctor`; user namespaces may need enabling | user namespaces usually blocked; `kirocrew doctor` tells you, opt into unsandboxed if you accept it |
 | Persist across restarts | n/a | the instance disk | volumes for `~/.kiro` and the runner folder |
 
-## 5.4 Laptop (macOS)
+## 7.4 Laptop (macOS)
 
-1. Follow doc 07 as written. After `scripts/install-agent.sh`, run `scripts/setup-gateway.sh`. It writes the rules and will **warn** that `gh`, `node`, `npm`, `npx` are outside `/usr/bin`.
+1. Follow doc 01 as written. After `scripts/install-agent.sh`, run `scripts/setup-gateway.sh`. It writes the rules and will **warn** that `gh`, `node`, `npm`, `npx` are outside `/usr/bin`.
 2. Because `/usr/bin` cannot be changed on macOS, those programs are trusted only after a human approves them once. After every Kiro Crew start, open any chat and run `gh --version`, `node --version`, `npm --version`, `npx --version`, accepting each approval card. The pins last until the gateway restarts. (`git`, `shasum`, `python3` are Apple's and need nothing.)
 3. Keep the runner as a LaunchAgent (`./svc.sh install && ./svc.sh start` in the runner folder) and stop the Mac from sleeping while you expect runs.
 
-## 5.5 EC2 or any Linux box (tested)
+## 7.5 EC2 or any Linux box (tested)
 
 1. **Check the machine.** `kirocrew doctor`. If it reports the sandbox backend unavailable, enable user namespaces or opt into unsandboxed execution before continuing; the agents run shell commands.
 2. **Keep it running after logout.** `loginctl enable-linger $(id -un)` for a user-level gateway.
@@ -66,7 +66,7 @@ So each machine needs its own gateway, its own templates, its own **webhook sour
    A runner started with `./run.sh` in an SSH session dies when the session ends and jobs sit `queued`.
 8. **Verify:** `scripts/preflight.sh OWNER/REPO`, then `CLEANUP=1 scripts/smoke-test.sh OWNER/REPO`.
 
-## 5.6 Container (recipe, not yet run end to end)
+## 7.6 Container (recipe, not yet run end to end)
 
 The gateway and the runner must share loopback, so put both in **one container** (or run the runner in a second container with `--network container:<gateway>`). Fix every program path at build time, because there is no `sudo` and no human at run time.
 
@@ -100,7 +100,7 @@ Run-time pieces, in the entrypoint or by hand after the first start:
 7. `kirocrew doctor`: containers usually block user namespaces, so the sandbox is unavailable. The agents then run unsandboxed inside the container, which is the container's own isolation. Decide if that is acceptable before labelling anything.
 8. `scripts/preflight.sh`, then the smoke test. Come back and replace "not yet run" above with what you saw.
 
-## 5.7 Security on a machine that is not your laptop
+## 7.7 Security on a machine that is not your laptop
 
 A remote machine is easier to reach than a laptop, so be stricter:
 
@@ -111,10 +111,10 @@ A remote machine is easier to reach than a laptop, so be stricter:
 - **Do not put the webhook token or signing secret** in instance user data, an image, or a file in a repo.
 - **The auto-approve rules are the trust boundary.** Each rule in `hooks.auto_approve_tools` lets an unattended agent run that program as your user. Keep the list to what the templates need; never `*`.
 
-## 5.8 Three more things that differ from your laptop
+## 7.8 Three more things that differ from your laptop
 
 - **Model sign-in.** The machine uses its own Kiro sign-in, which may be a different account or model.
 - **Memory.** Its gateway has its own memory store and lessons.
 - **Run times.** On a small arm64 EC2 instance a full lifecycle took about 7 minutes (install 20 s, 210 tests 10 s, build 10 s); on a laptop 6 to 8. Instance size matters little; model latency dominates.
 
-Run `scripts/setup-gateway.sh` before the first label, not after: the unattended policy is the first thing that breaks on a new machine ([doc 04, round three](04-lessons-and-troubleshooting.md#what-went-wrong-moving-to-ec2-third-round-amazon-linux-2023-arm64-kiro-crew-0110)).
+Run `scripts/setup-gateway.sh` before the first label, not after: the unattended policy is the first thing that breaks on a new machine ([doc 09, round three](09-lessons-and-troubleshooting.md#what-went-wrong-moving-to-ec2-third-round-amazon-linux-2023-arm64-kiro-crew-0110)).
