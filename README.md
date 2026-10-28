@@ -57,7 +57,7 @@ Everything runs on your machine. A self-hosted Actions runner turns each label e
 
 Labels tell you where an issue is; they don't tell you what the agents did. The optional **Software Factory** Kiro Crew app in [`app/software-factory`](app/software-factory/README.md) is the control room: a stage board of every `kiro-*` issue, each hop linked to the agent run that performed it (template, model, duration, credits, tool calls), a step-by-step view of a run's transcript while it is still executing, per-agent statistics, and the health of the runner, webhook sources and templates. It only observes; it never labels, dispatches or merges.
 
-Install it on the gateway host that runs the pipeline with `scripts/install-app.sh`; it appears in the dashboard sidebar under Apps. Runs and transcripts are read from that gateway's own files, so an app installed elsewhere shows only the GitHub side of the board.
+Install it on the gateway host that runs the pipeline with `REPO=OWNER/REPO scripts/install-app.sh`, then hard-reload the dashboard; it appears in the sidebar under Apps. The script trusts this one app only. Leave **Settings → Security → Trust every third-party app** off; that switch trusts every app you install later ([doc 01, step 7b](docs/01-quickstart-checklist.md#7b-optional-the-software-factory-app)). Runs and transcripts are read from that gateway's own files, so an app installed elsewhere shows only the GitHub side of the board.
 
 ## Quick start
 

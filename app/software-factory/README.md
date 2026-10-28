@@ -51,7 +51,9 @@ third-party execution is deny-by-default: `kirocrew app enable` is refused with
   `agent.apps_trusted_local` (the second marks a locally installed source). The
   install script does exactly this, merging into whatever is already listed.
 
-Do not set `agent.apps_allow_third_party=true`; that trusts every third-party app.
+Do not set `agent.apps_allow_third_party=true`, and leave the **Trust every third-party app** switch under Settings → Security → Third-party apps **off**. That switch trusts every app you install later, with your files, saved credentials and internet access, and skips the consent dialog. The same page lists `software-factory` as `trusted` once the script has run; that per-app entry is all this app needs.
+
+After the install, **hard reload the dashboard** (Cmd+Shift+R or Ctrl+Shift+R). The sidebar is read once at page load, so the new entry can be missing until you do. A missing entry does not mean the app is untrusted: check Apps → Library first, where it should read **Enabled**.
 
 An app runs with the gateway's own privileges; there is no sandbox around it. This
 one is stdlib Python, read-only apart from its own `data/` folder, and short enough to
