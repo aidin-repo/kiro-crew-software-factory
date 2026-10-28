@@ -33,6 +33,8 @@ You do not need any dashboard. The labels are the status:
 
 Typical timings: planner 30 to 90 s, implementer 2 to 5 min, reviewer 1 to 3 min, gate seconds. Label to `kiro-ready-to-merge` in 4 to 8 minutes.
 
+If you would rather see all of that in one place, the optional **Software Factory** app ([`app/software-factory`](../app/software-factory/README.md), installed with `scripts/install-app.sh` on the gateway host) puts every `kiro-*` issue on a stage board, links each hop to the agent run behind it (template, model, duration, credits, tool calls), opens a run's transcript while it is still executing, and shows runner, webhook and template health. It observes only.
+
 ## Trust boundaries
 
 The [README's Security model](../README.md#security-model) is the summary; these are the checks as enforced.

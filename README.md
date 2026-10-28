@@ -53,6 +53,12 @@ flowchart LR
 
 Everything runs on your machine. A self-hosted Actions runner turns each label event into a signed webhook to the local Kiro Crew gateway; the gateway runs the agent for that label; its shell, git and tests execute on your disk. GitHub only stores issues, labels, branches and PRs and fires the events. Only the repository owner's labels start work, and nothing merges on its own. [Doc 03](docs/03-delivery-lifecycle.md) is the full picture; [Doc 02](docs/02-how-it-works.md) walks the fast lane step by step.
 
+## Watching it: the Software Factory app
+
+Labels tell you where an issue is; they don't tell you what the agents did. The optional **Software Factory** Kiro Crew app in [`app/software-factory`](app/software-factory/README.md) is the control room: a stage board of every `kiro-*` issue, each hop linked to the agent run that performed it (template, model, duration, credits, tool calls), a step-by-step view of a run's transcript while it is still executing, per-agent statistics, and the health of the runner, webhook sources and templates. It only observes; it never labels, dispatches or merges.
+
+Install it on the gateway host that runs the pipeline with `scripts/install-app.sh`; it appears in the dashboard sidebar under Apps. Runs and transcripts are read from that gateway's own files, so an app installed elsewhere shows only the GitHub side of the board.
+
 ## Quick start
 
 New here? Follow **[docs/01, the zero-to-first-PR checklist](docs/01-quickstart-checklist.md)**: one ordered list with a checkbox per step. The summary below is for people who have done it before.
@@ -143,11 +149,12 @@ The numbers are the reading order: 01, then 02, then whatever you need. Opening 
 | [08 Customizing the agents](docs/08-customizing-the-agents.md) | Your own prompts, other languages and tools, new roles, and the contracts you must keep |
 | [09 Lessons and troubleshooting](docs/09-lessons-and-troubleshooting.md) | Symptom table, what went wrong while building this, how to read the evidence |
 
-The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts) and `scripts/`:
+The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts), `app/` (the [Software Factory dashboard app](app/software-factory/README.md)) and `scripts/`:
 
 | Script | Does |
 |---|---|
 | `install-agent.sh` | Copies the six templates into `~/.kiro/agents/`; files in `templates/agent.local/` override them; `--keep` protects in-place edits |
+| `install-app.sh` | Builds, installs, trusts and enables the Software Factory app on this gateway host |
 | `setup-gateway.sh` | Writes the unattended auto-approve rules, checks program paths and the credential helper, prints the fixes |
 | `setup-github.sh OWNER/REPO` | Creates the labels, stores the ten webhook secrets |
 | `install-into-repo.sh PATH` | Copies the workflow, dispatcher, gate and tests into your clone |
