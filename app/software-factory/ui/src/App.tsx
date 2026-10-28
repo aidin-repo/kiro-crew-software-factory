@@ -45,6 +45,11 @@ type Stats = {
 }
 type State = { generated_at: number; repo: string; stages: Stage[]; stats: Stats; board: Item[]; runs: Run[]; agents: AgentStat[]; infra: Infra }
 type Step = { t: string; kind: 'tool' | 'text' | 'end'; tool?: string; title?: string; detail?: string; status?: string; ok?: boolean | null; text?: string; reason?: string }
+type Span = {
+  id: string; parent: string | null; kind: 'run' | 'turn' | 'model' | 'tool'; name: string; start: number; end: number
+  status: 'ok' | 'error' | 'denied' | 'running' | 'pending' | 'warn'; input: string; output: string
+  meta: { title?: string; tool?: string; kind?: string; approval_ms?: number; credits?: number; model_calls?: number; tools?: number; context_pct?: number; model?: string; turns?: number; model_spans?: number }
+}
 
 const API = '/apps/software-factory/api'
 
@@ -151,6 +156,37 @@ const CSS = `
 .sf-spark{display:flex;align-items:flex-end;gap:3px;height:56px}
 .sf-spark i{flex:1;border-radius:2px 2px 0 0;background:var(--sf-c);min-height:2px}
 .sf-warnbox{border:1px solid var(--warn);background:var(--warn-subtle);color:var(--text);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
+.sf-drawer[data-wide=true]{width:min(1100px,96vw)}
+.sf-views{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border)}
+.sf-views button{border:0;background:transparent;color:var(--muted);padding:3px 10px;border-radius:6px;font-size:12px;cursor:pointer}
+.sf-views button[data-on=true]{background:var(--card);color:var(--text-strong);box-shadow:var(--shadow-sm)}
+.sf-tr-sum{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-elevated);margin-bottom:12px}
+.sf-tr-sum b{color:var(--text-strong);font-weight:600;margin-right:4px}
+.sf-tr-tools{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.sf-tr-tools input{flex:1;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12.5px}
+.sf-tr{display:grid;grid-template-columns:minmax(260px,38%) 1fr;font-size:12.5px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.sf-tr-head{display:contents}
+.sf-tr-head>div{background:var(--bg-elevated);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:7px 10px;border-bottom:1px solid var(--border)}
+.sf-tr-axis{position:relative;height:100%}
+.sf-tr-axis span{position:absolute;top:7px;transform:translateX(-50%);font-size:10.5px;color:var(--muted)}
+.sf-tr-row{display:contents;cursor:pointer}
+.sf-tr-row>div{padding:5px 10px;border-bottom:1px solid var(--border);min-height:30px;display:flex;align-items:center;gap:6px;min-width:0}
+.sf-tr-row:hover>div{background:var(--bg-hover)}
+.sf-tr-row[data-sel=true]>div{background:color-mix(in srgb, var(--accent) 12%, transparent)}
+.sf-tr-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-strong)}
+.sf-tr-sub{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sf-caret{width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);flex:none;font-size:10px}
+.sf-tr-track{position:relative;flex:1;height:18px}
+.sf-tr-track::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--border) calc(25% - 1px) 25%)}
+.sf-tr-bar{position:absolute;top:3px;height:12px;border-radius:4px;min-width:2px;opacity:.9}
+.sf-tr-bar[data-status=error],.sf-tr-bar[data-status=denied]{outline:2px solid var(--danger);outline-offset:-1px}
+.sf-tr-bar[data-status=running]{animation:sf-pulse 1.4s ease-in-out infinite}
+.sf-tr-dur{font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
+.sf-tr-detail{margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--card)}
+.sf-tr-kv{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sf-tr-kv b{color:var(--text-strong);font-weight:600}
+.sf-pre{background:var(--bg-elevated);border-radius:8px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--text);max-height:260px;overflow:auto;margin:4px 0 10px}
+.sf-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
 `
 
 // ---------------------------------------------------------------------------
@@ -218,7 +254,7 @@ function Tabs({ value, onChange, items }: { value: string; onChange: (v: string)
   )
 }
 
-function Drawer({ title, sub, onClose, children }: { title: React.ReactNode; sub?: React.ReactNode; onClose: () => void; children: React.ReactNode }) {
+function Drawer({ title, sub, onClose, children, wide, actions }: { title: React.ReactNode; sub?: React.ReactNode; onClose: () => void; children: React.ReactNode; wide?: boolean; actions?: React.ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -227,13 +263,14 @@ function Drawer({ title, sub, onClose, children }: { title: React.ReactNode; sub
   return (
     <>
       <div className="sf-scrim" onClick={onClose} />
-      <aside className="sf-drawer" role="dialog" aria-modal="true">
+      <aside className="sf-drawer" data-wide={!!wide} role="dialog" aria-modal="true">
         <div className="sf-dhead">
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-strong)' }}>{title}</div>
             {sub && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{sub}</div>}
           </div>
-          <button className="sf-x" onClick={onClose} aria-label="Close"><X size={16} /></button>
+          {actions}
+          <button className="sf-x" onClick={onClose} aria-label="Close" style={{ marginLeft: 4 }}><X size={16} /></button>
         </div>
         <div className="sf-dbody">{children}</div>
       </aside>
@@ -370,32 +407,170 @@ function RunsTable({ runs, onWatch }: { runs: Run[]; onWatch: (r: Run) => void }
   )
 }
 
+// ---------------------------------------------------------------------------
+// Trace view: the hop as a span tree on a shared time axis
+// ---------------------------------------------------------------------------
+
+const fmtMs = (ms: number) => (ms < 1000 ? `${Math.round(ms)}ms` : ms < 60000 ? `${(ms / 1000).toFixed(ms < 10000 ? 2 : 1)}s` : `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`)
+
+const spanColor = (sp: Span) => {
+  if (sp.status === 'error' || sp.status === 'denied') return 'var(--danger)'
+  if (sp.kind === 'run') return 'var(--text)'
+  if (sp.kind === 'turn') return 'var(--muted-strong)'
+  if (sp.kind === 'model') return 'var(--info)'
+  const k = sp.meta.kind || ''
+  if (k === 'read' || k === 'read_files' || k === 'search') return 'var(--muted)'
+  if (k === 'edit' || k === 'write') return 'var(--warn)'
+  return 'var(--accent)'
+}
+const spanLabel = (sp: Span) => {
+  if (sp.kind === 'tool') return sp.meta.title && sp.meta.title !== sp.name ? sp.meta.title : sp.name
+  if (sp.kind === 'model') return `model · ${sp.output ? 'said' : 'thought'}`
+  return sp.name
+}
+
+function TraceView({ spans, live }: { spans: Span[]; live: boolean }) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [sel, setSel] = useState<string | null>(null)
+  const [q, setQ] = useState('')
+  const root = spans[0]
+  const t0 = root.start
+  const total = Math.max(0.001, root.end - root.start)
+  const children = useMemo(() => {
+    const m = new Map<string | null, Span[]>()
+    for (const sp of spans) { const arr = m.get(sp.parent) ?? []; arr.push(sp); m.set(sp.parent, arr) }
+    return m
+  }, [spans])
+  const rows = useMemo(() => {
+    const out: { sp: Span; depth: number; kids: number }[] = []
+    const ql = q.trim().toLowerCase()
+    const matches = (sp: Span) => !ql || `${spanLabel(sp)} ${sp.input} ${sp.name}`.toLowerCase().includes(ql)
+    const walk = (id: string | null, depth: number) => {
+      for (const sp of children.get(id) ?? []) {
+        const kids = children.get(sp.id)?.length ?? 0
+        if (matches(sp) || sp.kind !== 'tool' && sp.kind !== 'model') out.push({ sp, depth, kids })
+        if (!collapsed.has(sp.id)) walk(sp.id, depth + 1)
+      }
+    }
+    walk(null, 0)
+    return out
+  }, [children, collapsed, q])
+  const toggle = (id: string) => setCollapsed(c => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const toolMs = spans.filter(s => s.kind === 'tool').reduce((a, s) => a + (s.end - s.start) * 1000, 0)
+  const modelMs = spans.filter(s => s.kind === 'model').reduce((a, s) => a + (s.end - s.start) * 1000, 0)
+  const errors = spans.filter(s => s.status === 'error' || s.status === 'denied').length
+  const selected = spans.find(s => s.id === sel) ?? null
+  return (
+    <div>
+      <div className="sf-tr-sum">
+        <span><b>{spans.length}</b>spans</span>
+        <span><b>{fmtMs(total * 1000)}</b>duration</span>
+        <span><b>{root.meta.tools ?? 0}</b>tool calls · {fmtMs(toolMs)} ({Math.round(100 * toolMs / (total * 1000))}%)</span>
+        <span><b>{root.meta.model_spans ?? 0}</b>model spans · {fmtMs(modelMs)} ({Math.round(100 * modelMs / (total * 1000))}%)</span>
+        <span><b>{(root.meta.credits ?? 0).toFixed(2)}</b>credits</span>
+        {errors > 0 && <span style={{ color: 'var(--danger)' }}><b style={{ color: 'var(--danger)' }}>{errors}</b>refused or failed</span>}
+        {live && <span style={{ color: 'var(--accent)' }}>live</span>}
+      </div>
+      <div className="sf-tr-tools">
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter spans by name, command or path…" aria-label="Filter spans" />
+        <button className="sf-btn" onClick={() => setCollapsed(new Set())}>Expand all</button>
+        <button className="sf-btn" onClick={() => setCollapsed(new Set(spans.filter(s => s.kind === 'turn').map(s => s.id)))}>Turns only</button>
+      </div>
+      <div className="sf-tr" role="tree">
+        <div className="sf-tr-head">
+          <div>Span</div>
+          <div className="sf-tr-axis">{[0, 0.25, 0.5, 0.75, 1].map(f => <span key={f} style={{ left: `calc(${f * 100}% - ${f === 1 ? 24 : f === 0 ? -6 : 0}px)` }}>{fmtMs(f * total * 1000)}</span>)}</div>
+        </div>
+        {rows.map(({ sp, depth, kids }) => {
+          const left = ((sp.start - t0) / total) * 100
+          const width = Math.max(0.3, ((sp.end - sp.start) / total) * 100)
+          const color = spanColor(sp)
+          return (
+            <div key={sp.id} className="sf-tr-row" role="treeitem" aria-selected={sel === sp.id} data-sel={sel === sp.id} onClick={() => setSel(sp.id === sel ? null : sp.id)}>
+              <div style={{ paddingLeft: 10 + depth * 16 }}>
+                <span className="sf-caret" onClick={e => { e.stopPropagation(); if (kids) toggle(sp.id) }} aria-hidden="true">{kids ? (collapsed.has(sp.id) ? '▸' : '▾') : ''}</span>
+                <span className="sf-dot" style={{ background: color, width: 8, height: 8, flex: 'none' }} />
+                <span className="sf-tr-name" title={spanLabel(sp)}>{spanLabel(sp)}</span>
+                {sp.kind === 'tool' && sp.input && <span className="sf-tr-sub" title={sp.input}>{sp.input}</span>}
+                {sp.kind === 'turn' && sp.meta.credits != null && <span className="sf-chip">{sp.meta.credits.toFixed(2)} cr</span>}
+              </div>
+              <div>
+                <div className="sf-tr-track"><span className="sf-tr-bar" data-status={sp.status} style={{ left: `${left}%`, width: `${width}%`, background: color }} /></div>
+                <span className="sf-tr-dur">{fmtMs((sp.end - sp.start) * 1000)}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {selected && (
+        <div className="sf-tr-detail">
+          <div className="sf-row" style={{ marginBottom: 6 }}>
+            <span className="sf-dot" style={{ background: spanColor(selected), width: 9, height: 9 }} />
+            <b style={{ color: 'var(--text-strong)' }}>{spanLabel(selected)}</b>
+            <Pill tone={selected.status === 'ok' ? 'var(--ok)' : selected.status === 'running' ? 'var(--accent)' : selected.status === 'warn' ? 'var(--warn)' : 'var(--danger)'}>{selected.status}</Pill>
+            <span style={{ color: 'var(--muted)', fontSize: 12 }}>{selected.kind}{selected.meta.tool ? ` · ${selected.meta.tool}` : ''}{selected.meta.kind ? ` · ${selected.meta.kind}` : ''}</span>
+          </div>
+          <div className="sf-tr-kv">
+            <span>start <b>+{fmtMs((selected.start - t0) * 1000)}</b></span>
+            <span>duration <b>{fmtMs((selected.end - selected.start) * 1000)}</b></span>
+            {selected.meta.approval_ms != null && <span>approval wait <b>{fmtMs(selected.meta.approval_ms)}</b></span>}
+            {selected.meta.credits != null && selected.kind !== 'run' && <span>credits <b>{selected.meta.credits.toFixed(3)}</b></span>}
+            {selected.meta.model_calls != null && <span>model calls <b>{selected.meta.model_calls}</b></span>}
+            {selected.meta.context_pct != null && <span>context used <b>{selected.meta.context_pct.toFixed(1)}%</b></span>}
+            {selected.meta.model && <span>model <b>{selected.meta.model}</b></span>}
+          </div>
+          {selected.input && <><div className="sf-label">{selected.kind === 'turn' ? 'prompt' : 'input'}</div><pre className="sf-pre">{selected.input}</pre></>}
+          {selected.output && <><div className="sf-label">{selected.kind === 'turn' ? 'stop reason' : 'output'}</div><pre className="sf-pre">{selected.output}</pre></>}
+          {!selected.input && !selected.output && <div className="sf-empty" style={{ padding: 8 }}>No input or output recorded for this span.</div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StepsDrawer({ run, api, onClose }: { run: Run; api: ReturnType<typeof useAppApi>; onClose: () => void }) {
+  const [view, setView] = useState<'steps' | 'trace' | 'json'>('steps')
   const [steps, setSteps] = useState<Step[] | null>(null)
+  const [spans, setSpans] = useState<Span[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
   useEffect(() => {
     let alive = true
     const load = async () => {
       try {
-        const d = (await api.get(`${API}/runs/${encodeURIComponent(run.id)}/steps`)) as { steps: Step[]; error?: string }
-        if (!alive) return
-        if (d.error) setErr(d.error); else setSteps(d.steps)
+        if (view === 'steps') {
+          const d = (await api.get(`${API}/runs/${encodeURIComponent(run.id)}/steps`)) as { steps: Step[]; error?: string }
+          if (!alive) return
+          if (d.error) setErr(d.error); else { setSteps(d.steps); setErr(null) }
+        } else {
+          const d = (await api.get(`${API}/runs/${encodeURIComponent(run.id)}/trace`)) as { spans: Span[]; found: boolean; error?: string }
+          if (!alive) return
+          if (d.error) setErr(d.error); else { setSpans(d.found ? d.spans : []); setErr(null) }
+        }
       } catch (e) { if (alive) setErr(String(e)) }
     }
     void load()
     const t = run.live ? window.setInterval(load, 4000) : null
     return () => { alive = false; if (t) window.clearInterval(t) }
-  }, [api, run.id, run.live])
+  }, [api, run.id, run.live, view])
   const s = run.session
+  const views = (
+    <div className="sf-views" role="tablist" aria-label="Transcript view">
+      {(['steps', 'trace', 'json'] as const).map(v => <button key={v} role="tab" aria-selected={view === v} data-on={view === v} onClick={() => setView(v)}>{v === 'steps' ? 'Steps' : v === 'trace' ? 'Trace' : 'JSON'}</button>)}
+    </div>
+  )
   return (
-    <Drawer onClose={onClose}
+    <Drawer onClose={onClose} wide={view !== 'steps'} actions={views}
       title={<span className="sf-row"><Bot size={16} style={{ color: agentColor(run.agent) }} />{shortAgent(run.agent)} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{run.kind}</span> <Outcome o={run.outcome} live={run.live} /></span>}
       sub={<span>{s?.title ?? ''} · {s?.model ?? ''} {s?.effort ? `(${s.effort})` : ''} · {fmtDur(run.duration_ms)} · {s?.tool_calls ?? 0} tool calls · {s?.credits?.toFixed(2) ?? '0'} credits{s?.issue ? ` · #${s.issue}` : ''}{s?.pr ? ` · PR ${s.pr}` : ''}</span>}>
       {run.detail && <div className="sf-warnbox"><AlertTriangle size={13} style={{ verticalAlign: -2 }} /> {run.detail}</div>}
       {err && <div className="sf-empty">{err}</div>}
-      {!steps && !err && <div className="sf-empty">Loading transcript…</div>}
-      {steps && steps.length === 0 && <div className="sf-empty">Transcript not available on this gateway (the run happened on another machine).</div>}
-      {steps?.map((st, i) => st.kind === 'tool' ? (
+      {view !== 'steps' && !spans && !err && <div className="sf-empty">Building trace…</div>}
+      {view !== 'steps' && spans && spans.length === 0 && <div className="sf-empty">Transcript not available on this gateway (the run happened on another machine).</div>}
+      {view === 'trace' && spans && spans.length > 0 && <TraceView spans={spans} live={run.live} />}
+      {view === 'json' && spans && spans.length > 0 && <pre className="sf-pre" style={{ maxHeight: 'none' }}>{JSON.stringify(spans, null, 2)}</pre>}
+      {view === 'steps' && !steps && !err && <div className="sf-empty">Loading transcript…</div>}
+      {view === 'steps' && steps && steps.length === 0 && <div className="sf-empty">Transcript not available on this gateway (the run happened on another machine).</div>}
+      {view === 'steps' && steps?.map((st, i) => st.kind === 'tool' ? (
         <div className="sf-step" key={i}>
           <span className="sf-dot" style={{ marginTop: 5, background: st.ok === false ? 'var(--danger)' : st.ok ? 'var(--ok)' : 'var(--muted)' }} />
           <div style={{ minWidth: 0, flex: 1 }}>

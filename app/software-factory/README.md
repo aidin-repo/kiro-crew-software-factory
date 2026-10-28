@@ -10,11 +10,20 @@ What the page shows:
 |---|---|---|
 | Board | GitHub via `gh` | Every issue carrying a `kiro-*` label as a card in its stage (planning, needs owner, implementing, in review, fixing, gate, ready, parked, shipped), time in stage, CI state, review rounds, credits, one bar per agent hop; a pulsing card means an agent is running on it right now |
 | Agent runs | `~/.kiro/crew/webhook_runs.json` joined to `~/.kiro/sessions` | Each webhook run: agent template, hop kind, issue or PR, outcome, duration, model, tool calls, credits; "steps" opens the transcript, "watch" follows a live one |
+| Run drawer: Steps / **Trace** / JSON | the run's `messages.jsonl` | Steps is the transcript as a list. Trace is the same run as a span tree on one time axis: run → turn → model spans and tool spans, each bar placed and sized by its real start and duration, colored by kind (model, shell, read, edit; red outline when refused or failed), with a summary strip (spans, duration, tool time vs model time, credits), a filter box, collapse to turns, and a detail panel per span with start offset, duration, approval wait, input and output. JSON is the raw span list |
 | Agents | same | Per template: runs, failures, average and p90 duration, average credits, model, last outcome; runs and credits per day for 14 days |
 | Infrastructure | `gh api` + gateway files | Actions runner, inbound-webhook switch, sources, installed templates, recent workflow runs |
 
 Clicking a board card opens the issue's timeline of hops with links to the issue, PR
 and docs PR; each hop opens its transcript.
+
+How the trace gets its timings: kiro-cli writes `tool_call` and `tool_result` together
+when a tool finishes, so those two stamps are equal. The span start is the
+`pending_interaction` record (the tool was requested), the approval wait ends at
+`interaction_resolved`, and the span ends at `tool_result`. A model span is the gap
+between one tool's end and the next tool's request, with the assistant text produced in
+that gap as its output. Credits exist per turn only (`usage_summary`), so they sit on
+the turn span. No judge, no scores: it is the real run, read back.
 
 ## Install
 

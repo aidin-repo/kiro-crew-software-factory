@@ -318,6 +318,191 @@ class Sessions:
         return steps[-limit:]
 
 
+    def trace(self, session_key: str) -> dict[str, Any]:
+        """Fold a hop's transcript into a span tree for the Trace view.
+
+        kiro-cli writes ``tool_call`` and ``tool_result`` together when the result
+        arrives, so those two timestamps are equal. The real timing lives in the
+        records around them: ``pending_interaction`` (the tool was requested),
+        ``interaction_resolved`` (the host approved it) and ``tool_result`` (it
+        finished). A model span is the gap from a turn's start, or the previous
+        tool's end, to the next tool request or the turn's end; the assistant text
+        produced in that gap is its output. Credits are per turn (``usage_summary``),
+        never per call, so they sit on the turn span.
+
+        Spans: ``{id, parent, kind, name, start, end, status, meta, input, output}``
+        with ``kind`` in ``run | turn | model | tool`` and times as epoch seconds.
+        """
+        entry = self.session_map().get(session_key)
+        if not entry:
+            return {"spans": [], "found": False}
+        sdir = self.find_dir(entry.get("sid") or "")
+        if not sdir:
+            return {"spans": [], "found": False}
+        spans: list[dict[str, Any]] = []
+        turns: dict[str, dict[str, Any]] = {}
+        tools: dict[str, dict[str, Any]] = {}
+        run_start: float | None = None
+        run_end: float | None = None
+        cur_turn: str | None = None
+        model_open: dict[str, Any] | None = None  # the model span waiting for its end
+        model_text: list[str] = []
+        seq = 0
+
+        def new_model(turn_id: str, start: float) -> dict[str, Any]:
+            nonlocal seq
+            seq += 1
+            sp = {"id": f"m{seq}", "parent": turn_id, "kind": "model", "name": "model",
+                  "start": start, "end": None, "status": "ok", "meta": {}, "input": "", "output": ""}
+            spans.append(sp)
+            return sp
+
+        def close_model(end: float) -> None:
+            nonlocal model_open, model_text
+            if model_open is not None:
+                model_open["end"] = end
+                model_open["output"] = "\n".join(model_text).strip()[:4000]
+                model_open = None
+                model_text = []
+
+        try:
+            with open(sdir / "messages.jsonl", encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        rec = json.loads(line)
+                    except ValueError:
+                        continue
+                    p = rec.get("payload", {})
+                    t = p.get("type")
+                    ts = _iso_to_ts(rec.get("timestamp"))
+                    if ts is None:
+                        continue
+                    run_start = ts if run_start is None else min(run_start, ts)
+                    run_end = ts if run_end is None else max(run_end, ts)
+                    if t == "turn_start":
+                        tid = p.get("turnId") or f"t{len(turns)+1}"
+                        cur_turn = tid
+                        turns[tid] = {"id": tid, "parent": "run", "kind": "turn", "name": f"turn {len(turns)+1}",
+                                      "start": ts, "end": None, "status": "ok",
+                                      "meta": {"credits": 0.0, "model_calls": 0, "tools": 0}, "input": "", "output": ""}
+                        spans.append(turns[tid])
+                        model_open = new_model(tid, ts)
+                    elif t == "user" and cur_turn and not turns[cur_turn]["input"]:
+                        content = p.get("content")
+                        if isinstance(content, str):
+                            turns[cur_turn]["input"] = content[:2000]
+                    elif t == "assistant":
+                        content = p.get("content")
+                        if isinstance(content, str) and content.strip() and p.get("operationType") != "Reasoning":
+                            model_text.append(content.strip())
+                    elif t == "pending_interaction" and p.get("interactionType") == "tool_approval":
+                        cid = p.get("toolCallId") or ""
+                        if cid in tools:
+                            # A second consent round for the same call (the host's
+                            # follow-up check); the span already started at the first.
+                            continue
+                        close_model(ts)
+                        seq += 1
+                        tools[cid] = {"id": f"c{seq}", "parent": cur_turn or "run", "kind": "tool", "name": "tool",
+                                      "start": ts, "approved": None, "end": None, "status": "pending",
+                                      "meta": {}, "input": str(p.get("question") or "")[:1500], "output": ""}
+                        spans.append(tools[cid])
+                    elif t == "interaction_resolved":
+                        sp = tools.get(p.get("toolCallId") or "")
+                        if sp is not None:
+                            if sp.get("approved") is None:
+                                sp["approved"] = ts
+                            if p.get("selectedOption") not in (None, "accept", "always-accept"):
+                                sp["status"] = "denied"
+                    elif t == "tool_call":
+                        cid = p.get("toolCallId") or ""
+                        sp = tools.get(cid)
+                        if sp is None:
+                            close_model(ts)
+                            seq += 1
+                            sp = {"id": f"c{seq}", "parent": cur_turn or "run", "kind": "tool", "name": "tool",
+                                  "start": ts, "approved": None, "end": None, "status": "pending", "meta": {}, "input": "", "output": ""}
+                            tools[cid] = sp
+                            spans.append(sp)
+                        args = p.get("args") or {}
+                        detail = ""
+                        if isinstance(args, dict):
+                            detail = str(args.get("command") or args.get("path") or args.get("query") or args.get("pattern") or "")
+                        sp["name"] = p.get("toolName") or "tool"
+                        sp["meta"] = {"title": p.get("title") or "", "tool": p.get("toolName"), "kind": p.get("kind") or p.get("actionType") or ""}
+                        if detail:
+                            # The approval question for a file tool is only its title;
+                            # the call's own args carry the path or command.
+                            sp["input"] = detail[:1500]
+                        if p.get("status") in ("denied", "rejected", "failed"):
+                            sp["status"] = "denied"
+                        if cur_turn:
+                            turns[cur_turn]["meta"]["tools"] += 1
+                    elif t == "tool_result":
+                        sp = tools.get(p.get("toolCallId") or "")
+                        if sp is not None:
+                            sp["end"] = ts
+                            ok = p.get("success", True)
+                            if sp["status"] == "pending":
+                                sp["status"] = "ok" if ok in (True, "True", "true") else "error"
+                            content = p.get("content")
+                            if isinstance(content, str):
+                                sp["output"] = content[:4000]
+                        if cur_turn:
+                            model_open = new_model(cur_turn, ts)
+                    elif t == "usage_summary":
+                        tid = p.get("turnId") or cur_turn
+                        tsum = turns.get(tid or "")
+                        if tsum is not None:
+                            for turn in p.get("promptTurnSummaries") or []:
+                                try:
+                                    tsum["meta"]["credits"] += float(turn.get("usage") or 0)
+                                except (TypeError, ValueError):
+                                    pass
+                            tsum["meta"]["credits"] = round(tsum["meta"]["credits"], 3)
+                            breakdown = p.get("contextBreakdown") or {}
+                            tsum["meta"]["model_calls"] = int(breakdown.get("modelCalls") or 0)
+                            win = (breakdown.get("window") or {})
+                            if win.get("usagePercentage") is not None:
+                                tsum["meta"]["context_pct"] = win.get("usagePercentage")
+                            if p.get("status") not in (None, "success"):
+                                tsum["status"] = "error"
+                    elif t == "turn_end":
+                        tid = p.get("turnId") or cur_turn
+                        close_model(ts)
+                        tsum = turns.get(tid or "")
+                        if tsum is not None:
+                            tsum["end"] = ts
+                            tsum["output"] = (p.get("stopReason") or "")
+                            if p.get("stopReason") not in (None, "end_turn"):
+                                tsum["status"] = "warn"
+        except OSError:
+            return {"spans": [], "found": False}
+
+        close_model(run_end or 0.0)
+        # Close anything still open (a live run) at the last timestamp seen.
+        for sp in spans:
+            if sp.get("end") is None:
+                sp["end"] = run_end
+                if sp["kind"] == "tool" and sp["status"] == "pending":
+                    sp["status"] = "running"
+        # Drop empty model spans (a tool followed another with no model time in between).
+        spans = [sp for sp in spans if not (sp["kind"] == "model" and (sp["end"] or 0) - sp["start"] < 0.05 and not sp["output"])]
+        for sp in spans:
+            if sp["kind"] == "tool" and sp.get("approved") is not None:
+                sp["meta"]["approval_ms"] = int((sp["approved"] - sp["start"]) * 1000)
+            sp.pop("approved", None)
+        meta = _read_json(sdir / "session.json", {})
+        root = {"id": "run", "parent": None, "kind": "run", "name": meta.get("agentMode") or "run",
+                "start": run_start, "end": run_end, "status": "ok",
+                "meta": {"model": meta.get("modelId"), "turns": len(turns),
+                         "tools": sum(1 for s in spans if s["kind"] == "tool"),
+                         "model_spans": sum(1 for s in spans if s["kind"] == "model"),
+                         "credits": round(sum(t["meta"]["credits"] for t in turns.values()), 3)},
+                "input": "", "output": ""}
+        return {"found": True, "spans": [root] + spans}
+
+
 def _extract_refs(content: str) -> tuple[int | None, int | None]:
     """Issue and PR numbers from the dispatcher's trusted control-plane block.
 
@@ -736,6 +921,14 @@ class Factory:
             return {"error": "unknown run"}
         return {"run": run, "steps": self.sessions.steps(run["session_key"]) if run.get("session_key") else []}
 
+    def run_trace(self, run_id: str) -> dict[str, Any]:
+        snapshot = self.state()
+        run = next((r for r in snapshot["runs"] if r["id"] == run_id), None)
+        if not run:
+            return {"error": "unknown run"}
+        trace = self.sessions.trace(run["session_key"]) if run.get("session_key") else {"spans": [], "found": False}
+        return {"run": run, **trace}
+
 
 FACTORY = Factory()
 
@@ -767,6 +960,9 @@ class Handler(BaseHTTPRequestHandler):
             elif route.startswith("/runs/") and route.endswith("/steps"):
                 run_id = route[len("/runs/"):-len("/steps")]
                 self._json(200, FACTORY.run_steps(run_id))
+            elif route.startswith("/runs/") and route.endswith("/trace"):
+                run_id = route[len("/runs/"):-len("/trace")]
+                self._json(200, FACTORY.run_trace(run_id))
             else:
                 self._json(404, {"error": "not found", "route": route})
         except Exception as exc:  # noqa: BLE001 - surface to the page instead of a dead backend
