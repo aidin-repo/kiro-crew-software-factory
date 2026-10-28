@@ -18,30 +18,57 @@ and docs PR; each hop opens its transcript.
 
 ## Install
 
-On the gateway host that runs the pipeline (for a remote factory, the EC2 box):
+On the gateway host that runs the pipeline (for a remote factory, the EC2 box), as the
+user the gateway runs as, from a normal terminal:
+
+```bash
+git pull
+scripts/install-app.sh
+```
+
+The script builds the page (`npm`), installs the app, grants execution trust to this
+app alone, and enables it. Reload the dashboard and **Software Factory** is in the
+sidebar under Apps. No gateway restart is needed.
+
+Done by hand, the same steps are:
 
 ```bash
 cd app/software-factory/ui && npm install && npm run build && cd -
 kirocrew app install ./app/software-factory
-kirocrew app enable software-factory
+kirocrew app enable software-factory        # refused until the app is trusted, see below
 ```
 
-The install command must run as the dashboard owner in a normal terminal; an agent
-session is refused. The page appears in the sidebar as **Software Factory**.
+### Trust
 
-Rebuilding after a change: `npm run build` in `ui/`, then `kirocrew app install` again
-(it replaces the copy under `~/.kiro/crew/apps/software-factory/`). The gateway
-restarts the backend process on install.
+Kiro Crew runs apps that did not ship inside the package as **third-party**, and
+third-party execution is deny-by-default: `kirocrew app enable` is refused with
+"third-party app execution is disabled" until you grant trust. Two ways:
+
+- **Dashboard** (one click): Apps → Library → Software Factory → Enable. A consent
+  dialog names what the app receives; confirming grants trust to this app only and
+  enables it.
+- **Terminal**: add `software-factory` to both `agent.apps_trusted` and
+  `agent.apps_trusted_local` (the second marks a locally installed source). The
+  install script does exactly this, merging into whatever is already listed.
+
+Do not set `agent.apps_allow_third_party=true`; that trusts every third-party app.
+
+An app runs with the gateway's own privileges; there is no sandbox around it. This
+one is stdlib Python, read-only apart from its own `data/` folder, and short enough to
+read: `backend/server.py`.
+
+### Updating
+
+After a change: `scripts/install-app.sh` again (or `npm run build` in `ui/` and
+`kirocrew app install ./app/software-factory`). The install replaces the copy under
+`~/.kiro/crew/apps/software-factory/` and restarts the backend; trust is kept.
 
 ## Configuration
 
-The watched repository defaults to `aidin-repo/task-chatbot`. Change it with:
-
-```bash
-curl -X POST http://127.0.0.1:<backend-port>/api/config -d '{"repo":"owner/name"}'
-```
-
-or set `FACTORY_REPO` in the backend's environment. The backend port is chosen by the
+The watched repository defaults to `aidin-repo/task-chatbot`. Change it with
+`REPO=owner/name scripts/install-app.sh`, or write
+`~/.kiro/crew/apps/software-factory/data/config.json` as `{"repo": "owner/name"}` and
+disable/enable the app so the backend restarts. The backend port is chosen by the
 gateway (`port: auto`); the dashboard reaches it through `/apps/software-factory/api/`.
 
 ## Requirements

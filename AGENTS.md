@@ -22,6 +22,7 @@ The person is running you on the machine that will host the factory, or on a lap
 | `scripts/install-into-repo.sh PATH` | do it | copies files into their clone; they review and merge the PR |
 | `scripts/install-runner.sh OWNER/REPO` | **hand over** | downloads a binary that runs as the user; `SERVICE=1` needs `sudo` |
 | Start the runner | **hand over** | a process that outlives your session |
+| `scripts/install-app.sh` | **hand over** | `kirocrew app install` is refused from any process but the dashboard owner's; it also grants execution trust, which is the human's call |
 | `scripts/preflight.sh OWNER/REPO` | do it | read-only |
 | `scripts/smoke-test.sh OWNER/REPO` | ask first, then `CLEANUP=1` | creates a real issue, branch and PR under their account |
 
@@ -75,6 +76,7 @@ Work through this with the person. Stop at each hand-over and give them the comm
 | `templates/scripts/kiro_gate.py` | the deterministic merge gate, no model |
 | `templates/scripts/tests/` | pytest for both scripts |
 | `scripts/` | install, setup, preflight, smoke test (README has the table) |
+| `app/software-factory/` | the optional Kiro Crew dashboard app that observes the pipeline (its README covers install and trust) |
 | `docs/` | 01 checklist, 02 how it works, 03 reference, 04 GitHub, 05 Kiro Crew, 06 testing, 07 laptop/EC2/container, 08 customizing, 09 troubleshooting |
 
 ## When something stalls
