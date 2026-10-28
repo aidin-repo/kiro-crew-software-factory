@@ -52,6 +52,10 @@ Everything here happened while building the working setup: first the single-stag
 | Implementer runs `npm ci` and tests fail on Node 18 while CI uses Node 20+ | `/usr/bin/node` is the distro's old Node (alternatives), while the Node you wanted sat in `/usr/local/bin` and is now refused as a shadow | Point `/usr/bin/node`, `npm`, `npx` at the Node major your CI uses (`sudo ln -sfn /usr/local/node-vXX/bin/node /usr/bin/node`, same for npm and npx) and remove the `/usr/local/bin` copies |
 | Job stays `queued`; runner shows `offline` although you started it earlier | `./run.sh` was started in an SSH session that has since ended | Run it as a service (`SERVICE=1 scripts/install-runner.sh`) or with `nohup ./run.sh > runner.log 2>&1 &` |
 | `kirocrew config set` says the file is read-only, or `install-agent.sh` says read-only file system | You ran it from an agent chat; `config.json` and `~/.kiro/agents` are protected from agents | Run it from your own terminal |
+| `kirocrew app install` says "could not verify this process as the local owner" | Same cause: app installs are accepted only from the dashboard owner's own terminal | Run `scripts/install-app.sh` from your own terminal on the gateway host |
+| `install-app.sh` says the app "is already installed" | It does not install over itself | `kirocrew app uninstall software-factory` (keeps its data), then run the script again |
+| Software Factory installed and enabled, but not in the sidebar | The sidebar is read once at page load | Hard reload (Cmd+Shift+R / Ctrl+Shift+R). Then Apps → Library should read Enabled. Do **not** turn on "Trust every third-party app" to fix this; the script already trusted this one app |
+| Settings → Security shows "Trust every third-party app" **on** | Turned on while troubleshooting | Turn it off. The app stays enabled through its own `trusted` entry on the same page. On, it trusts every app you install later |
 
 ## What went wrong, in order
 

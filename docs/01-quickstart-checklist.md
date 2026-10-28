@@ -160,6 +160,26 @@ Alternative for the secrets: export all ten as environment variables and let `sc
 
   Expected output, over 6 to 8 minutes: `kiro-approved`, `PR opened`, `kiro-review`, `kiro-ready`, `kiro-ready-to-merge`, then `PASS reviewer: VERDICT: approve`, `PASS gate: ## Delivery gate: PASS`, `PASS lifecycle complete`.
 
+## 7b. Optional: the Software Factory app
+
+A dashboard page that shows every `kiro-*` issue as a card in its stage, each hop linked to the agent run behind it, and the health of the runner and sources. It only observes. Install it on the same machine as the gateway, from your own terminal (an agent chat cannot install apps):
+
+- [ ] Build, install, trust this one app, enable, and point it at your repository:
+
+  ```bash
+  REPO=OWNER/REPO scripts/install-app.sh
+  ```
+
+  Expected: `✅ installed software-factory`, `✅ agent.apps_trusted = ["software-factory"]`, `✅ enabled software-factory`, `Backend: port NNNN (starting)`.
+
+- [ ] **Hard reload the dashboard** (Cmd+Shift+R or Ctrl+Shift+R). The sidebar is read once at page load, so a plain refresh can miss the new entry. **Software Factory** appears in the sidebar under **Apps**.
+
+- [ ] If it still does not show, open **Apps → Library**. Software Factory should read **Enabled**. If it shows an **Enable** button, click it and confirm the consent dialog; that grants trust to this app only.
+
+- [ ] Check **Settings → Security → Third-party apps**. `software-factory` should be listed as **trusted**. The switch **Trust every third-party app** should stay **off**: it trusts every app you install later, with your files, saved credentials and internet access, and skips the consent dialog. The install script never turns it on. If you turned it on while troubleshooting, turn it off; the app stays enabled through its own trust entry.
+
+Updating later: `kirocrew app uninstall software-factory` (keeps its data), then the install line again. Details: [`app/software-factory/README.md`](../app/software-factory/README.md).
+
 ## 8. First real issue
 
 - [ ] Write an issue with **What**, **Why** and **Acceptance** sections (doc 02 has an example). Add the `kiro-deliver` label.
