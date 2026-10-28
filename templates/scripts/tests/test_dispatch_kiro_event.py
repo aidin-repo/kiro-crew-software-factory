@@ -287,6 +287,18 @@ def test_implementer_is_told_about_shell_rule_closed_issue_and_cleanup(tmp_path)
     assert "even when you stop early" in review
 
 
+def test_implementer_honours_owner_approval_for_held_paths_but_not_hard_denied_ones(tmp_path):
+    message = dispatch.build_payload(implement_event(), environment(tmp_path, KIRO_MODE="issue-implement"))["message"]
+    # The planner holds deployment/authorization changes for the owner; once the owner
+    # applies kiro-approved, the implementer must build them, not refuse again.
+    assert "kiro-approved label is their decision on every path in that block" in message
+    assert "deployment script or an authorization change" in message
+    assert "## Sensitive changes" in message
+    # The gate's hard deny list is still off limits whatever the spec lists.
+    assert ".github/ or infrastructure/" in message
+    assert ".env or credential files, stay off limits" in message
+
+
 def test_issue_implement_requires_owner_label_and_author(tmp_path):
     with pytest.raises(dispatch.DispatchError, match="repository owner"):
         dispatch.build_payload(implement_event(sender="someone-else"), environment(tmp_path, KIRO_MODE="issue-implement"))
