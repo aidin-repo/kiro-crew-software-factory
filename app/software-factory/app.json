@@ -1,6 +1,6 @@
 {
   "name": "software-factory",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Software Factory",
   "description": "The control room for the label-driven delivery pipeline. Watches a GitHub repository's kiro-* issues and pull requests as a stage board, joins every hop to the Kiro Crew agent run that performed it (template, model, duration, credits, tool calls), lets you open a run's transcript while it is still executing, and shows the health of the runner, webhook sources and installed templates. Observes only; it never labels, dispatches or merges.",
   "author": "aidin-repo",
@@ -11,6 +11,7 @@
     "Stage board: planning, implementing, review, gate, ready, parked, shipped, with time in stage and review rounds",
     "Every hop linked to its agent run: template, model, duration, credits and tool-call count",
     "Watch a running agent's transcript step by step, or read a finished one",
+    "Trace view: every hop as a span tree on one time axis (turns, model time, tool calls) with durations, approval waits, input and output",
     "Per-agent statistics: runs, failures, average and p90 duration, average credits, model",
     "Infrastructure health: Actions runner, inbound-webhook switch, sources, installed templates, recent workflow runs",
     "Keeps its own run ledger so history outlives the gateway's 50-run ring"
