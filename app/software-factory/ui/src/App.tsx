@@ -16,7 +16,7 @@ type PR = { number: number; url: string; title: string; labels: string[]; state:
 type Item = {
   issue: number; title: string; url: string; state: string; labels: string[]; stage: string; stage_since: number | null
   created_at: number | null; closed_at: number | null; pr: PR | null; docs_pr: { number: number; url: string } | null
-  rounds: number; hops: Hop[]; live_agent: string | null; credits: number
+  rounds: number; hops: Hop[]; live_agent: string | null; credits: number; last_activity: number | null
 }
 type Session = {
   found: boolean; agent?: string; model?: string; effort?: string; status?: string; title?: string; tool_calls: number
@@ -43,7 +43,7 @@ type Stats = {
   pass_rate: number | null; runs_total: number; runs_week: number; runs_completed: number; runs_failed: number; live_runs: number
   credits_total: number; credits_week: number; run_success_rate: number | null
 }
-type State = { generated_at: number; repo: string; stages: Stage[]; stats: Stats; board: Item[]; runs: Run[]; agents: AgentStat[]; infra: Infra }
+type State = { generated_at: number; repo: string; stages: Stage[]; stats: Stats; board: Item[]; board_total: number; board_limit: number; runs: Run[]; agents: AgentStat[]; infra: Infra }
 type Step = { t: string; kind: 'tool' | 'text' | 'end'; tool?: string; title?: string; detail?: string; status?: string; ok?: boolean | null; text?: string; reason?: string }
 type Span = {
   id: string; parent: string | null; kind: 'run' | 'turn' | 'model' | 'tool'; name: string; start: number; end: number
@@ -157,6 +157,9 @@ const CSS = `
 .sf-spark i{flex:1;border-radius:2px 2px 0 0;background:var(--sf-c);min-height:2px}
 .sf-warnbox{border:1px solid var(--warn);background:var(--warn-subtle);color:var(--text);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
 .sf-drawer[data-wide=true]{width:min(1100px,96vw)}
+.sf-legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:11.5px;color:var(--muted);padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-elevated);margin-bottom:12px}
+.sf-legend>span{display:inline-flex;align-items:center;gap:5px}
+.sf-legend-h{color:var(--text-strong);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
 .sf-views{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border)}
 .sf-views button{border:0;background:transparent;color:var(--muted);padding:3px 10px;border-radius:6px;font-size:12px;cursor:pointer}
 .sf-views button[data-on=true]{background:var(--card);color:var(--text-strong);box-shadow:var(--shadow-sm)}
@@ -198,11 +201,13 @@ function useFactory() {
   const [state, setState] = useState<State | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showAll, setShowAll] = useState(false)
   const timer = useRef<number | null>(null)
 
   const load = useCallback(async (force = false) => {
     try {
-      const data = (await api.get(`${API}/state${force ? '?refresh=1' : ''}`)) as State
+      const q = [force ? 'refresh=1' : '', showAll ? 'limit=0' : ''].filter(Boolean).join('&')
+      const data = (await api.get(`${API}/state${q ? `?${q}` : ''}`)) as State
       setState(data)
       setError(null)
     } catch (e) {
@@ -210,7 +215,7 @@ function useFactory() {
     } finally {
       setLoading(false)
     }
-  }, [api])
+  }, [api, showAll])
 
   useEffect(() => {
     void load()
@@ -223,7 +228,7 @@ function useFactory() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load])
 
-  return { state, error, loading, reload: () => load(true), api }
+  return { state, error, loading, reload: () => load(true), api, showAll, setShowAll }
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +298,7 @@ function BoardCard({ it, onOpen }: { it: Item; onOpen: () => void }) {
       </div>
       <div className="sf-cardtitle">{it.title}</div>
       <div className="sf-meta">
-        <span title="Time in stage"><Clock size={11} style={{ verticalAlign: -1 }} /> {fmtAgo(it.stage_since)}</span>
+        <span title="Last activity"><Clock size={11} style={{ verticalAlign: -1 }} /> {fmtAgo(it.last_activity ?? it.stage_since)}</span>
         {it.pr && <span><GitPullRequest size={11} style={{ verticalAlign: -1 }} /> PR {it.pr.number}</span>}
         {it.rounds > 1 && <span>{it.rounds} rounds</span>}
         {it.credits > 0 && <span><Zap size={11} style={{ verticalAlign: -1 }} /> {it.credits.toFixed(1)}</span>}
@@ -307,26 +312,53 @@ function BoardCard({ it, onOpen }: { it: Item; onOpen: () => void }) {
   )
 }
 
-function Board({ state, onOpen }: { state: State; onOpen: (it: Item) => void }) {
-  const cols = state.stages.filter(s => s.id !== 'shipped' || state.stats.by_stage.shipped > 0)
+function Board({ state, onOpen, showAll, onToggleAll }: { state: State; onOpen: (it: Item) => void; showAll: boolean; onToggleAll: (v: boolean) => void }) {
+  // Columns hold only the stages that have cards, plus the ones work can be waiting in.
+  const always = new Set(['planning', 'needs-owner', 'implementing', 'review', 'ready'])
+  const cols = state.stages.filter(s => always.has(s.id) || state.board.some(it => it.stage === s.id))
+  const hidden = state.board_total - state.board.length
   return (
-    <div className="sf-board">
-      {cols.map(s => {
-        const items = state.board.filter(it => it.stage === s.id)
-        const shown = s.id === 'shipped' ? items.slice(0, 6) : items
-        return (
-          <div className="sf-col" key={s.id}>
-            <div className="sf-colhead">
-              <span className="sf-row"><span className="sf-dot" style={{ background: STAGE_TONE[s.id] }} />{s.label}</span>
-              <span className="sf-count">{items.length}</span>
+    <>
+      <div className="sf-row" style={{ justifyContent: 'space-between', marginBottom: 10, fontSize: 12, color: 'var(--muted)', flexWrap: 'wrap', gap: 10 }}>
+        <span>
+          {showAll ? `All ${state.board_total} items` : `${state.board.length} most recently active${hidden > 0 ? ` · ${hidden} older hidden` : ''}`}, newest first in each column
+        </span>
+        <div className="sf-views" role="tablist" aria-label="Board scope">
+          <button role="tab" aria-selected={!showAll} data-on={!showAll} onClick={() => onToggleAll(false)}>Recent {state.board_limit || 20}</button>
+          <button role="tab" aria-selected={showAll} data-on={showAll} onClick={() => onToggleAll(true)}>All</button>
+        </div>
+      </div>
+      <div className="sf-legend" aria-label="Legend">
+        <span className="sf-legend-h">Bars: one per agent hop, oldest left</span>
+        {(['delivery-planner', 'delivery-implementer', 'delivery-reviewer', 'delivery-scribe', 'github-worker'] as const).map(a => (
+          <span key={a}><i className="sf-hop" style={{ background: agentColor(a), width: 18, minWidth: 18, display: 'inline-block' }} /> {shortAgent(a)}</span>
+        ))}
+        <span><i className="sf-hop" style={{ background: 'var(--muted)', opacity: 0.35, width: 18, minWidth: 18, display: 'inline-block' }} /> failed or stopped</span>
+        <span><i className="sf-hop sf-pulse" style={{ background: 'var(--accent)', width: 18, minWidth: 18, display: 'inline-block' }} /> running</span>
+        <span className="sf-legend-h" style={{ marginLeft: 8 }}>Card</span>
+        <span><span className="sf-dot" style={{ background: 'var(--ok)' }} /> CI passing</span>
+        <span><span className="sf-dot" style={{ background: 'var(--warn)' }} /> CI pending</span>
+        <span><span className="sf-dot" style={{ background: 'var(--danger)' }} /> CI failing</span>
+        <span><Clock size={11} style={{ verticalAlign: -1 }} /> last activity</span>
+        <span><GitPullRequest size={11} style={{ verticalAlign: -1 }} /> PR</span>
+        <span><Zap size={11} style={{ verticalAlign: -1 }} /> credits</span>
+      </div>
+      <div className="sf-board">
+        {cols.map(s => {
+          const items = state.board.filter(it => it.stage === s.id)
+          return (
+            <div className="sf-col" key={s.id}>
+              <div className="sf-colhead">
+                <span className="sf-row"><span className="sf-dot" style={{ background: STAGE_TONE[s.id] }} />{s.label}</span>
+                <span className="sf-count">{items.length}</span>
+              </div>
+              {items.map(it => <BoardCard key={it.issue} it={it} onOpen={() => onOpen(it)} />)}
+              {items.length === 0 && <div className="sf-empty" style={{ padding: 10 }}>empty</div>}
             </div>
-            {shown.map(it => <BoardCard key={it.issue} it={it} onOpen={() => onOpen(it)} />)}
-            {items.length === 0 && <div className="sf-empty" style={{ padding: 10 }}>empty</div>}
-            {shown.length < items.length && <div className="sf-empty" style={{ padding: 6 }}>+{items.length - shown.length} more</div>}
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </>
   )
 }
 
@@ -716,7 +748,7 @@ function InfraView({ infra }: { infra: Infra }) {
 // ---------------------------------------------------------------------------
 
 export default function SoftwareFactory() {
-  const { state, error, loading, reload, api } = useFactory()
+  const { state, error, loading, reload, api, showAll, setShowAll } = useFactory()
   const [tab, setTab] = useState('board')
   const [openIssue, setOpenIssue] = useState<number | null>(null)
   const [watch, setWatch] = useState<Run | null>(null)
@@ -755,7 +787,7 @@ export default function SoftwareFactory() {
                 <button className="sf-btn" onClick={reload}><RefreshCw size={13} /> Refresh</button>
               </div>
             </div>
-            {tab === 'board' && <Board state={state} onOpen={it => setOpenIssue(it.issue)} />}
+            {tab === 'board' && <Board state={state} onOpen={it => setOpenIssue(it.issue)} showAll={showAll} onToggleAll={setShowAll} />}
             {tab === 'runs' && <RunsTable runs={state.runs} onWatch={setWatch} />}
             {tab === 'agents' && <Agents state={state} />}
             {tab === 'infra' && <InfraView infra={state.infra} />}

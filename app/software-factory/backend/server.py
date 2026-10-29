@@ -36,6 +36,8 @@ from pathlib import Path
 from typing import Any
 
 PORT = int(os.environ.get("PORT", 9100))
+#: Board cards shown by default: the N items with the most recent activity. 0 = all.
+BOARD_LIMIT = int(os.environ.get("SOFTWARE_FACTORY_BOARD_LIMIT", 20))
 APP_NAME = os.environ.get("KIROCREW_APP_NAME", "software-factory")
 APP_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.environ.get("SOFTWARE_FACTORY_DATA", APP_ROOT / "data"))
@@ -765,9 +767,18 @@ class Factory:
                 ],
                 "live_agent": live[-1]["agent"] if live else None,
                 "credits": round(sum((h.get("session") or {}).get("credits") or 0 for h in hops), 2),
+                # The newest thing that happened to this item: the last agent hop's end,
+                # or the GitHub timestamp behind its stage. The board is ordered by it.
+                "last_activity": max(
+                    [stage_since or 0, _iso_to_ts(issue.get("updatedAt")) or 0]
+                    + [((h.get("started_at") or 0) + ((h.get("duration_ms") or 0) / 1000)) for h in hops]
+                ) or None,
             })
-        order = {s: i for i, s in enumerate(STAGE_IDS)}
-        items.sort(key=lambda it: (order.get(it["stage"], 99), -(it["stage_since"] or 0)))
+        # A closed issue that never shipped (a smoke test cleaned up, a test issue closed
+        # by hand, an abandoned fast lane) is history, not work in a stage. Drop it.
+        items = [it for it in items if not (it["state"] == "CLOSED" and it["stage"] != "shipped")]
+        # Newest activity first, in every column.
+        items.sort(key=lambda it: -(it["last_activity"] or 0))
         return items
 
     # -- Stats ----------------------------------------------------------------
@@ -892,27 +903,32 @@ class Factory:
 
     # -- Public ---------------------------------------------------------------
 
-    def state(self, force: bool = False) -> dict[str, Any]:
+    def state(self, force: bool = False, limit: int = BOARD_LIMIT) -> dict[str, Any]:
+        """The snapshot. ``limit`` caps the board to the N most recently active items
+        (0 = all); stats always count the whole board."""
         with self._lock:
             now = time.time()
             if not force and self._cache and now - self._cache[0] < CACHE_TTL:
-                return self._cache[1]
-            repo = self.config.repo
-            gh = self._github(repo)
-            runs = self._webhook_runs(repo)
-            board = self._board(gh, runs)
-            snapshot = {
-                "generated_at": now,
-                "repo": repo,
-                "stages": [{"id": s, "label": lab, "agent": ag} for s, lab, ag in STAGES],
-                "stats": self._stats(board, runs),
-                "board": board,
-                "runs": runs[:120],
-                "agents": self._agents(runs),
-                "infra": self._infra(gh, repo),
-            }
-            self._cache = (now, snapshot)
-            return snapshot
+                snapshot = self._cache[1]
+            else:
+                repo = self.config.repo
+                gh = self._github(repo)
+                runs = self._webhook_runs(repo)
+                board = self._board(gh, runs)
+                snapshot = {
+                    "generated_at": now,
+                    "repo": repo,
+                    "stages": [{"id": s, "label": lab, "agent": ag} for s, lab, ag in STAGES],
+                    "stats": self._stats(board, runs),
+                    "board": board,
+                    "runs": runs[:120],
+                    "agents": self._agents(runs),
+                    "infra": self._infra(gh, repo),
+                }
+                self._cache = (now, snapshot)
+            if limit and len(snapshot["board"]) > limit:
+                return {**snapshot, "board": snapshot["board"][:limit], "board_total": len(snapshot["board"]), "board_limit": limit}
+            return {**snapshot, "board_total": len(snapshot["board"]), "board_limit": limit}
 
     def run_steps(self, run_id: str) -> dict[str, Any]:
         snapshot = self.state()
@@ -954,7 +970,15 @@ class Handler(BaseHTTPRequestHandler):
             if route == "/health":
                 self._json(200, {"status": "ok", "app": APP_NAME})
             elif route == "/state":
-                self._json(200, FACTORY.state(force=force))
+                query = self.path.split("?", 1)[1] if "?" in self.path else ""
+                limit = BOARD_LIMIT
+                for part in query.split("&"):
+                    if part.startswith("limit="):
+                        try:
+                            limit = max(0, int(part[6:]))
+                        except ValueError:
+                            pass
+                self._json(200, FACTORY.state(force=force, limit=limit))
             elif route == "/config":
                 self._json(200, {"repo": FACTORY.config.repo})
             elif route.startswith("/runs/") and route.endswith("/steps"):
