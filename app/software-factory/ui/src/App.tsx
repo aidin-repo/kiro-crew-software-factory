@@ -879,6 +879,21 @@ function InfraView({ infra }: { infra: Infra }) {
 
 export default function SoftwareFactory() {
   const { state, error, loading, reload, api, showAll, setShowAll } = useFactory()
+  // Costs lists every issue, but the board may be cut to the N most recent. Opening
+  // an issue that is not loaded switches the board to All first; the drawer opens
+  // once the full board has arrived.
+  const [pendingOpen, setPendingOpen] = useState<number | null>(null)
+  const openFromCosts = (issue: number) => {
+    if (state?.board.some(it => it.issue === issue)) { setOpenIssue(issue); return }
+    setPendingOpen(issue)
+    setShowAll(true)
+  }
+  useEffect(() => {
+    if (pendingOpen != null && state?.board.some(it => it.issue === pendingOpen)) {
+      setOpenIssue(pendingOpen)
+      setPendingOpen(null)
+    }
+  }, [pendingOpen, state])
   const [tab, setTab] = useState('board')
   const [openIssue, setOpenIssue] = useState<number | null>(null)
   const [watch, setWatch] = useState<Run | null>(null)
@@ -920,7 +935,7 @@ export default function SoftwareFactory() {
             {tab === 'board' && <Board state={state} onOpen={it => setOpenIssue(it.issue)} showAll={showAll} onToggleAll={setShowAll} />}
             {tab === 'runs' && <RunsTable runs={state.runs} onWatch={setWatch} />}
             {tab === 'agents' && <Agents state={state} />}
-            {tab === 'costs' && <CostsView costs={state.costs} onOpen={setOpenIssue} />}
+            {tab === 'costs' && <CostsView costs={state.costs} onOpen={openFromCosts} />}
             {tab === 'infra' && <InfraView infra={state.infra} />}
           </>
         )}
