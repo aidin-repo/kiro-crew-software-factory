@@ -43,7 +43,16 @@ type Stats = {
   pass_rate: number | null; runs_total: number; runs_week: number; runs_completed: number; runs_failed: number; live_runs: number
   credits_total: number; credits_week: number; run_success_rate: number | null
 }
-type State = { generated_at: number; repo: string; stages: Stage[]; stats: Stats; board: Item[]; board_total: number; board_limit: number; runs: Run[]; agents: AgentStat[]; infra: Infra }
+type CostIssue = { issue: number; title: string; url: string; stage: string; pr: number | null; hops: number; rounds: number; credits: number; by_agent: Record<string, number>; last_activity: number | null }
+type CostAgent = { agent: string; runs: number; credits: number; model_calls: number; tool_calls: number; duration_ms: number; avg_credits: number | null; credits_per_minute: number | null }
+type CostModel = { model: string; runs: number; credits: number; model_calls: number; avg_credits: number | null; avg_context_chars: number | null }
+type CostDay = { day: string; credits: number; runs: number; by_agent: Record<string, number> }
+type Costs = {
+  unit: string; tokens_recorded: boolean
+  totals: { credits_total: number; credits_week: number; runs: number; issues_with_cost: number; avg_per_issue: number | null; median_per_delivered_issue: number | null; avg_per_shipped_issue: number | null; avg_per_hop: number | null }
+  per_issue: CostIssue[]; per_agent: CostAgent[]; per_model: CostModel[]; per_day: CostDay[]
+}
+type State = { generated_at: number; repo: string; stages: Stage[]; stats: Stats; board: Item[]; board_total: number; board_limit: number; runs: Run[]; agents: AgentStat[]; costs: Costs; infra: Infra }
 type Step = { t: string; kind: 'tool' | 'text' | 'end'; tool?: string; title?: string; detail?: string; status?: string; ok?: boolean | null; text?: string; reason?: string }
 type Span = {
   id: string; parent: string | null; kind: 'run' | 'turn' | 'model' | 'tool'; name: string; start: number; end: number
@@ -690,6 +699,127 @@ function Agents({ state }: { state: State }) {
 // Infrastructure
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Costs: credits by issue, agent, model and day
+// ---------------------------------------------------------------------------
+
+const fmtCr = (n: number | null | undefined, d = 1) => (n == null ? '–' : n.toFixed(d))
+const fmtInt = (n: number | null | undefined) => (n == null ? '–' : n.toLocaleString())
+const AGENT_ORDER = ['delivery-planner', 'delivery-implementer', 'delivery-reviewer', 'delivery-scribe', 'github-worker']
+
+function StackBar({ parts, total, height = 8 }: { parts: Record<string, number>; total: number; height?: number }) {
+  const t = Math.max(total, 0.0001)
+  return (
+    <div style={{ display: 'flex', height, borderRadius: height / 2, overflow: 'hidden', background: 'var(--bg-elevated)', width: '100%' }}
+      title={Object.entries(parts).map(([a, c]) => `${shortAgent(a)} ${c.toFixed(2)}`).join(' · ')}>
+      {AGENT_ORDER.filter(a => parts[a]).map(a => <span key={a} style={{ width: `${(100 * parts[a]) / t}%`, background: agentColor(a) }} />)}
+    </div>
+  )
+}
+
+function CostsView({ costs, onOpen }: { costs: Costs; onOpen: (issue: number) => void }) {
+  const t = costs.totals
+  const maxDay = Math.max(0.0001, ...costs.per_day.map(d => d.credits))
+  const maxIssue = Math.max(0.0001, ...costs.per_issue.map(i => i.credits))
+  const [showAll, setShowAll] = useState(false)
+  const issues = showAll ? costs.per_issue : costs.per_issue.slice(0, 10)
+  const agentTotal = costs.per_agent.reduce((a, x) => a + x.credits, 0)
+  return (
+    <div>
+      <div className="sf-stats">
+        <StatCard label="Credits, all runs" value={fmtCr(t.credits_total)} accent />
+        <StatCard label="Credits, 7 days" value={fmtCr(t.credits_week)} />
+        <StatCard label="Per hop (avg)" value={fmtCr(t.avg_per_hop, 2)} />
+        <StatCard label="Per issue (avg)" value={fmtCr(t.avg_per_issue)} />
+        <StatCard label="Per delivered issue (median)" value={fmtCr(t.median_per_delivered_issue)} />
+        <StatCard label="Per shipped issue (avg)" value={fmtCr(t.avg_per_shipped_issue)} />
+      </div>
+      {!costs.tokens_recorded && (
+        <div className="sf-legend"><span className="sf-legend-h">Unit</span><span>Credits are what kiro-cli records for a webhook run; token counts are not written on this surface. Model calls and context size stand in for them.</span></div>
+      )}
+
+      <div className="sf-grid" style={{ marginBottom: 16, gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)' }}>
+        <Card>
+          <CardTitle>Credits per day, last 14 days</CardTitle>
+          <div className="sf-spark" style={{ height: 120, marginTop: 10 }}>
+            {costs.per_day.map(d => (
+              <div key={d.day} title={`${d.day}: ${d.credits.toFixed(1)} credits, ${d.runs} runs\n${Object.entries(d.by_agent).map(([a, c]) => `${shortAgent(a)} ${c.toFixed(1)}`).join(', ')}`}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', borderRadius: '2px 2px 0 0', overflow: 'hidden' }}>
+                {AGENT_ORDER.filter(a => d.by_agent[a]).map(a => <span key={a} style={{ height: `${Math.round((100 * d.by_agent[a]) / maxDay)}%`, background: agentColor(a), display: 'block' }} />)}
+                {d.credits === 0 && <span style={{ height: 2, background: 'var(--border)', display: 'block' }} />}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--muted)', marginTop: 4 }}>
+            <span>{costs.per_day[0]?.day.slice(5)}</span><span>{costs.per_day[Math.floor(costs.per_day.length / 2)]?.day.slice(5)}</span><span>{costs.per_day[costs.per_day.length - 1]?.day.slice(5)}</span>
+          </div>
+        </Card>
+        <Card>
+          <CardTitle>By agent</CardTitle>
+          <StackBar parts={Object.fromEntries(costs.per_agent.map(a => [a.agent, a.credits]))} total={agentTotal} height={10} />
+          <table className="sf-table" style={{ marginTop: 10 }}>
+            <thead><tr><th>Agent</th><th>Runs</th><th>Credits</th><th>Avg</th><th>Cr/min</th></tr></thead>
+            <tbody>
+              {costs.per_agent.map(a => (
+                <tr key={a.agent}>
+                  <td><span className="sf-row"><span className="sf-dot" style={{ background: agentColor(a.agent) }} />{shortAgent(a.agent)}</span></td>
+                  <td>{a.runs}</td><td>{fmtCr(a.credits)} <span style={{ color: 'var(--muted)', fontSize: 11 }}>{agentTotal ? Math.round((100 * a.credits) / agentTotal) : 0}%</span></td>
+                  <td>{fmtCr(a.avg_credits, 2)}</td><td>{fmtCr(a.credits_per_minute, 2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      </div>
+
+      <Card>
+        <div className="sf-row" style={{ justifyContent: 'space-between' }}>
+          <CardTitle>Most expensive issues</CardTitle>
+          {costs.per_issue.length > 10 && <button className="sf-btn" onClick={() => setShowAll(v => !v)}>{showAll ? 'Top 10' : `All ${costs.per_issue.length}`}</button>}
+        </div>
+        <table className="sf-table" style={{ marginTop: 8 }}>
+          <thead><tr><th>Issue</th><th style={{ width: '32%' }}>Credits</th><th>Hops</th><th>Rounds</th><th>Stage</th><th>Split by agent</th></tr></thead>
+          <tbody>
+            {issues.map(i => (
+              <tr key={i.issue} style={{ cursor: 'pointer' }} onClick={() => onOpen(i.issue)}>
+                <td><span className="sf-mono" style={{ color: 'var(--muted)' }}>#{i.issue}</span> {i.title.length > 48 ? i.title.slice(0, 48) + '…' : i.title}</td>
+                <td>
+                  <div className="sf-row">
+                    <div className="sf-bar" style={{ flex: 1, marginTop: 0 }}><i style={{ width: `${Math.round((100 * i.credits) / maxIssue)}%`, background: 'var(--accent)' }} /></div>
+                    <b style={{ minWidth: 44, textAlign: 'right' }}>{fmtCr(i.credits)}</b>
+                  </div>
+                </td>
+                <td>{i.hops}</td><td>{i.rounds}</td>
+                <td><Pill tone={STAGE_TONE[i.stage] ?? 'var(--muted)'}>{i.stage}</Pill></td>
+                <td style={{ minWidth: 140 }}><StackBar parts={i.by_agent} total={i.credits} /></td>
+              </tr>
+            ))}
+            {issues.length === 0 && <tr><td colSpan={6} className="sf-empty">No issue on this board has an agent run recorded on this gateway.</td></tr>}
+          </tbody>
+        </table>
+      </Card>
+
+      <Card>
+        <CardTitle>By model</CardTitle>
+        <table className="sf-table" style={{ marginTop: 8 }}>
+          <thead><tr><th>Model</th><th>Runs</th><th>Credits</th><th>Avg per run</th><th>Model calls</th><th>Avg context</th></tr></thead>
+          <tbody>
+            {costs.per_model.map(m => (
+              <tr key={m.model}>
+                <td className="sf-mono">{m.model}</td><td>{m.runs}</td><td>{fmtCr(m.credits)}</td><td>{fmtCr(m.avg_credits, 2)}</td>
+                <td>{fmtInt(m.model_calls)}</td><td>{m.avg_context_chars != null ? `${Math.round(m.avg_context_chars / 1000)}k chars` : '–'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {costs.per_model.length === 1 && costs.per_model[0].model === 'auto' && (
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Every template runs on <code>auto</code>, so there is one row. Pin a model in a template (doc 08) and it appears here on its own.</div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
 function Light({ ok, unknown }: { ok: boolean; unknown?: boolean }) {
   return <span className="sf-dot" style={{ background: unknown ? 'var(--muted)' : ok ? 'var(--ok)' : 'var(--danger)', width: 10, height: 10 }} />
 }
@@ -749,6 +879,21 @@ function InfraView({ infra }: { infra: Infra }) {
 
 export default function SoftwareFactory() {
   const { state, error, loading, reload, api, showAll, setShowAll } = useFactory()
+  // Costs lists every issue, but the board may be cut to the N most recent. Opening
+  // an issue that is not loaded switches the board to All first; the drawer opens
+  // once the full board has arrived.
+  const [pendingOpen, setPendingOpen] = useState<number | null>(null)
+  const openFromCosts = (issue: number) => {
+    if (state?.board.some(it => it.issue === issue)) { setOpenIssue(issue); return }
+    setPendingOpen(issue)
+    setShowAll(true)
+  }
+  useEffect(() => {
+    if (pendingOpen != null && state?.board.some(it => it.issue === pendingOpen)) {
+      setOpenIssue(pendingOpen)
+      setPendingOpen(null)
+    }
+  }, [pendingOpen, state])
   const [tab, setTab] = useState('board')
   const [openIssue, setOpenIssue] = useState<number | null>(null)
   const [watch, setWatch] = useState<Run | null>(null)
@@ -779,7 +924,7 @@ export default function SoftwareFactory() {
               <StatCard label="Credits (7d)" value={state.stats.credits_week.toFixed(1)} />
             </div>
             <div className="sf-row" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <Tabs value={tab} onChange={setTab} items={[['board', 'Board'], ['runs', 'Agent runs'], ['agents', 'Agents'], ['infra', 'Infrastructure']]} />
+              <Tabs value={tab} onChange={setTab} items={[['board', 'Board'], ['runs', 'Agent runs'], ['agents', 'Agents'], ['costs', 'Costs'], ['infra', 'Infrastructure']]} />
               <div className="sf-row" style={{ marginBottom: 16 }}>
                 <span className="sf-row" style={{ fontSize: 12, color: 'var(--muted)' }}>
                   {state.stats.live_runs > 0 ? <><Activity size={13} className="sf-pulse" style={{ color: 'var(--accent)' }} /> live</> : <><CircleDot size={13} /> polling</>}
@@ -790,6 +935,7 @@ export default function SoftwareFactory() {
             {tab === 'board' && <Board state={state} onOpen={it => setOpenIssue(it.issue)} showAll={showAll} onToggleAll={setShowAll} />}
             {tab === 'runs' && <RunsTable runs={state.runs} onWatch={setWatch} />}
             {tab === 'agents' && <Agents state={state} />}
+            {tab === 'costs' && <CostsView costs={state.costs} onOpen={openFromCosts} />}
             {tab === 'infra' && <InfraView infra={state.infra} />}
           </>
         )}

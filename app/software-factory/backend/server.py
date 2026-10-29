@@ -260,6 +260,10 @@ class Sessions:
                                 pass
                         breakdown = payload.get("contextBreakdown") or {}
                         summ["model_calls"] = int(breakdown.get("modelCalls") or 0)
+                        summ["context_chars"] = int(breakdown.get("totalChars") or 0)
+                    elif ptype == "assistant" and payload.get("reasoningModelId") and not summ.get("resolved_model"):
+                        # The concrete model when kiro-cli names it; "auto" otherwise.
+                        summ["resolved_model"] = str(payload["reasoningModelId"]).split("::")[-1]
                         try:
                             summ["elapsed_ms"] = int(payload.get("elapsedTime"))
                         except (TypeError, ValueError):
@@ -781,6 +785,105 @@ class Factory:
         items.sort(key=lambda it: -(it["last_activity"] or 0))
         return items
 
+    # -- Costs ----------------------------------------------------------------
+
+    @staticmethod
+    def _costs(board: list[dict[str, Any]], runs: list[dict[str, Any]], days: int = 14) -> dict[str, Any]:
+        """Credits by issue, agent, model and day.
+
+        Credits are the only cost unit kiro-cli records for a webhook run (each turn's
+        ``usage_summary``); token counts are not written for this surface, so the
+        secondary measures are model calls and the context size in characters. The
+        model is "auto" unless a template pins one.
+        """
+        def sess(r: dict[str, Any]) -> dict[str, Any]:
+            return r.get("session") or {}
+
+        def credits(r: dict[str, Any]) -> float:
+            return float(sess(r).get("credits") or 0)
+
+        def model_of(r: dict[str, Any]) -> str:
+            return sess(r).get("resolved_model") or sess(r).get("model") or "auto"
+
+        now = time.time()
+        week_ago = now - 7 * 86400
+        # Per issue: the board already joined hops to issues.
+        per_issue = []
+        for it in board:
+            hops = it.get("hops") or []
+            if not hops:
+                continue
+            by_agent: dict[str, float] = {}
+            for h in hops:
+                by_agent[h["agent"]] = round(by_agent.get(h["agent"], 0) + float(h.get("credits") or 0), 3)
+            per_issue.append({
+                "issue": it["issue"], "title": it["title"], "url": it["url"], "stage": it["stage"],
+                "pr": (it.get("pr") or {}).get("number"),
+                "hops": len(hops), "rounds": it.get("rounds", 0),
+                "credits": round(it.get("credits") or 0, 2),
+                "by_agent": by_agent,
+                "last_activity": it.get("last_activity"),
+            })
+        per_issue.sort(key=lambda x: -x["credits"])
+        # Per agent and per model, over every run we can see.
+        per_agent: dict[str, dict[str, Any]] = {}
+        per_model: dict[str, dict[str, Any]] = {}
+        for r in runs:
+            c = credits(r)
+            a = per_agent.setdefault(r["agent"], {"agent": r["agent"], "runs": 0, "credits": 0.0, "model_calls": 0, "tool_calls": 0, "duration_ms": 0})
+            a["runs"] += 1; a["credits"] += c
+            a["model_calls"] += int(sess(r).get("model_calls") or 0)
+            a["tool_calls"] += int(sess(r).get("tool_calls") or 0)
+            a["duration_ms"] += int(r.get("duration_ms") or 0)
+            m = per_model.setdefault(model_of(r), {"model": model_of(r), "runs": 0, "credits": 0.0, "model_calls": 0, "context_chars": []})
+            m["runs"] += 1; m["credits"] += c
+            m["model_calls"] += int(sess(r).get("model_calls") or 0)
+            if sess(r).get("context_chars"):
+                m["context_chars"].append(int(sess(r)["context_chars"]))
+        for a in per_agent.values():
+            a["credits"] = round(a["credits"], 2)
+            a["avg_credits"] = round(a["credits"] / a["runs"], 2) if a["runs"] else None
+            a["credits_per_minute"] = round(a["credits"] / (a["duration_ms"] / 60000), 2) if a["duration_ms"] else None
+        for m in per_model.values():
+            m["credits"] = round(m["credits"], 2)
+            m["avg_credits"] = round(m["credits"] / m["runs"], 2) if m["runs"] else None
+            m["avg_context_chars"] = int(statistics.mean(m["context_chars"])) if m["context_chars"] else None
+            del m["context_chars"]
+        # Per day, stacked by agent, oldest first.
+        day_keys = [time.strftime("%Y-%m-%d", time.gmtime(now - i * 86400)) for i in range(days - 1, -1, -1)]
+        per_day = {d: {"day": d, "credits": 0.0, "runs": 0, "by_agent": {}} for d in day_keys}
+        for r in runs:
+            if not r.get("started_at"):
+                continue
+            d = time.strftime("%Y-%m-%d", time.gmtime(r["started_at"]))
+            if d in per_day:
+                c = credits(r)
+                per_day[d]["credits"] = round(per_day[d]["credits"] + c, 3)
+                per_day[d]["runs"] += 1
+                per_day[d]["by_agent"][r["agent"]] = round(per_day[d]["by_agent"].get(r["agent"], 0) + c, 3)
+        total = round(sum(credits(r) for r in runs), 2)
+        week = round(sum(credits(r) for r in runs if (r.get("started_at") or 0) >= week_ago), 2)
+        shipped = [x for x in per_issue if x["stage"] == "shipped"]
+        delivered = [x for x in per_issue if x["stage"] in ("shipped", "ready")]
+        return {
+            "unit": "credits",
+            "tokens_recorded": False,
+            "totals": {
+                "credits_total": total,
+                "credits_week": week,
+                "runs": len(runs),
+                "issues_with_cost": len(per_issue),
+                "avg_per_issue": round(statistics.mean([x["credits"] for x in per_issue]), 2) if per_issue else None,
+                "median_per_delivered_issue": round(statistics.median([x["credits"] for x in delivered]), 2) if delivered else None,
+                "avg_per_shipped_issue": round(statistics.mean([x["credits"] for x in shipped]), 2) if shipped else None,
+                "avg_per_hop": round(total / len(runs), 2) if runs else None,
+            },
+            "per_issue": per_issue,
+            "per_agent": sorted(per_agent.values(), key=lambda a: -a["credits"]),
+            "per_model": sorted(per_model.values(), key=lambda m: -m["credits"]),
+            "per_day": list(per_day.values()),
+        }
+
     # -- Stats ----------------------------------------------------------------
 
     @staticmethod
@@ -923,6 +1026,7 @@ class Factory:
                     "board": board,
                     "runs": runs[:120],
                     "agents": self._agents(runs),
+                    "costs": self._costs(board, runs),
                     "infra": self._infra(gh, repo),
                 }
                 self._cache = (now, snapshot)
