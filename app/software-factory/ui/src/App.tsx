@@ -157,6 +157,9 @@ const CSS = `
 .sf-spark i{flex:1;border-radius:2px 2px 0 0;background:var(--sf-c);min-height:2px}
 .sf-warnbox{border:1px solid var(--warn);background:var(--warn-subtle);color:var(--text);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
 .sf-drawer[data-wide=true]{width:min(1100px,96vw)}
+.sf-legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:11.5px;color:var(--muted);padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-elevated);margin-bottom:12px}
+.sf-legend>span{display:inline-flex;align-items:center;gap:5px}
+.sf-legend-h{color:var(--text-strong);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
 .sf-views{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border)}
 .sf-views button{border:0;background:transparent;color:var(--muted);padding:3px 10px;border-radius:6px;font-size:12px;cursor:pointer}
 .sf-views button[data-on=true]{background:var(--card);color:var(--text-strong);box-shadow:var(--shadow-sm)}
@@ -316,7 +319,7 @@ function Board({ state, onOpen, showAll, onToggleAll }: { state: State; onOpen: 
   const hidden = state.board_total - state.board.length
   return (
     <>
-      <div className="sf-row" style={{ justifyContent: 'space-between', marginBottom: 10, fontSize: 12, color: 'var(--muted)' }}>
+      <div className="sf-row" style={{ justifyContent: 'space-between', marginBottom: 10, fontSize: 12, color: 'var(--muted)', flexWrap: 'wrap', gap: 10 }}>
         <span>
           {showAll ? `All ${state.board_total} items` : `${state.board.length} most recently active${hidden > 0 ? ` · ${hidden} older hidden` : ''}`}, newest first in each column
         </span>
@@ -324,6 +327,21 @@ function Board({ state, onOpen, showAll, onToggleAll }: { state: State; onOpen: 
           <button role="tab" aria-selected={!showAll} data-on={!showAll} onClick={() => onToggleAll(false)}>Recent {state.board_limit || 20}</button>
           <button role="tab" aria-selected={showAll} data-on={showAll} onClick={() => onToggleAll(true)}>All</button>
         </div>
+      </div>
+      <div className="sf-legend" aria-label="Legend">
+        <span className="sf-legend-h">Bars: one per agent hop, oldest left</span>
+        {(['delivery-planner', 'delivery-implementer', 'delivery-reviewer', 'delivery-scribe', 'github-worker'] as const).map(a => (
+          <span key={a}><i className="sf-hop" style={{ background: agentColor(a), width: 18, minWidth: 18, display: 'inline-block' }} /> {shortAgent(a)}</span>
+        ))}
+        <span><i className="sf-hop" style={{ background: 'var(--muted)', opacity: 0.35, width: 18, minWidth: 18, display: 'inline-block' }} /> failed or stopped</span>
+        <span><i className="sf-hop sf-pulse" style={{ background: 'var(--accent)', width: 18, minWidth: 18, display: 'inline-block' }} /> running</span>
+        <span className="sf-legend-h" style={{ marginLeft: 8 }}>Card</span>
+        <span><span className="sf-dot" style={{ background: 'var(--ok)' }} /> CI passing</span>
+        <span><span className="sf-dot" style={{ background: 'var(--warn)' }} /> CI pending</span>
+        <span><span className="sf-dot" style={{ background: 'var(--danger)' }} /> CI failing</span>
+        <span><Clock size={11} style={{ verticalAlign: -1 }} /> last activity</span>
+        <span><GitPullRequest size={11} style={{ verticalAlign: -1 }} /> PR</span>
+        <span><Zap size={11} style={{ verticalAlign: -1 }} /> credits</span>
       </div>
       <div className="sf-board">
         {cols.map(s => {

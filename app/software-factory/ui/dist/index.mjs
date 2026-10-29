@@ -1,26 +1,26 @@
-import { jsxs as r, jsx as e, Fragment as $ } from "react/jsx-runtime";
-import { useAppApi as re } from "@kirocrew/app-sdk";
-import { PageHeader as ae, StatCard as N, CardTitle as T, Card as A } from "@kirocrew/app-sdk/ui";
-import { AlertTriangle as J, Activity as se, CircleDot as ne, RefreshCw as oe, Zap as K, Eye as X, ExternalLink as P, CheckCircle2 as ie, Bot as Q, Server as le, Clock as de, GitPullRequest as ce, X as pe } from "lucide-react";
-import { useState as w, useRef as he, useCallback as me, useEffect as q, useMemo as O } from "react";
-const H = "/apps/software-factory/api", F = (t) => {
+import { jsxs as r, jsx as e, Fragment as z } from "react/jsx-runtime";
+import { useAppApi as se } from "@kirocrew/app-sdk";
+import { PageHeader as ne, StatCard as N, CardTitle as T, Card as R } from "@kirocrew/app-sdk/ui";
+import { AlertTriangle as K, Activity as ie, CircleDot as le, RefreshCw as oe, Clock as X, GitPullRequest as Q, Zap as q, Eye as Y, ExternalLink as P, CheckCircle2 as de, Bot as Z, Server as ce, X as pe } from "lucide-react";
+import { useState as y, useRef as he, useCallback as me, useEffect as U, useMemo as O } from "react";
+const H = "/apps/software-factory/api", L = (t) => {
   if (t == null) return "–";
   const a = Math.round(t / 1e3);
   if (a < 60) return `${a}s`;
   const s = Math.floor(a / 60);
   return s < 60 ? `${s}m ${a % 60}s` : `${Math.floor(s / 60)}h ${s % 60}m`;
-}, z = (t) => {
+}, $ = (t) => {
   if (!t) return "–";
   const a = Math.max(0, Date.now() / 1e3 - t);
   return a < 60 ? `${Math.round(a)}s ago` : a < 3600 ? `${Math.round(a / 60)}m ago` : a < 86400 ? `${Math.round(a / 3600)}h ago` : `${Math.round(a / 86400)}d ago`;
-}, G = (t) => t ? new Date(t * 1e3).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "–", B = (t) => t.replace("delivery-", "").replace("github-", ""), fe = {
+}, G = (t) => t ? new Date(t * 1e3).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "–", F = (t) => t.replace("delivery-", "").replace("github-", ""), fe = {
   "delivery-planner": "var(--info)",
   "delivery-implementer": "var(--accent)",
   "delivery-reviewer": "var(--warn)",
   "delivery-scribe": "var(--ok)",
   "github-worker": "var(--muted-strong)",
   "pr-gate": "var(--text)"
-}, L = (t) => fe[t] ?? "var(--muted)", Y = {
+}, S = (t) => fe[t] ?? "var(--muted)", ee = {
   planning: "var(--info)",
   "needs-owner": "var(--warn)",
   implementing: "var(--accent)",
@@ -30,7 +30,7 @@ const H = "/apps/software-factory/api", F = (t) => {
   ready: "var(--ok)",
   parked: "var(--danger)",
   shipped: "var(--ok)"
-}, Z = (t) => t === "completed" ? "var(--ok)" : t === "running" ? "var(--accent)" : "var(--danger)", ue = `
+}, te = (t) => t === "completed" ? "var(--ok)" : t === "running" ? "var(--accent)" : "var(--danger)", ue = `
 .sf-root{display:flex;flex-direction:column;min-height:0;flex:1;color:var(--text)}
 .sf-body{padding:0 24px 32px;overflow-y:auto;flex:1;min-height:0}
 .sf-row{display:flex;align-items:center;gap:8px}
@@ -90,6 +90,9 @@ const H = "/apps/software-factory/api", F = (t) => {
 .sf-spark i{flex:1;border-radius:2px 2px 0 0;background:var(--sf-c);min-height:2px}
 .sf-warnbox{border:1px solid var(--warn);background:var(--warn-subtle);color:var(--text);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
 .sf-drawer[data-wide=true]{width:min(1100px,96vw)}
+.sf-legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:11.5px;color:var(--muted);padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-elevated);margin-bottom:12px}
+.sf-legend>span{display:inline-flex;align-items:center;gap:5px}
+.sf-legend-h{color:var(--text-strong);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
 .sf-views{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border)}
 .sf-views button{border:0;background:transparent;color:var(--muted);padding:3px 10px;border-radius:6px;font-size:12px;cursor:pointer}
 .sf-views button[data-on=true]{background:var(--card);color:var(--text-strong);box-shadow:var(--shadow-sm)}
@@ -122,7 +125,7 @@ const H = "/apps/software-factory/api", F = (t) => {
 .sf-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
 `;
 function ge() {
-  const t = re(), [a, s] = w(null), [p, h] = w(null), [n, f] = w(!0), [i, d] = w(!1), m = he(null), u = me(async (c = !1) => {
+  const t = se(), [a, s] = y(null), [p, h] = y(null), [n, f] = y(!0), [i, d] = y(!1), m = he(null), u = me(async (c = !1) => {
     try {
       const x = [c ? "refresh=1" : "", i ? "limit=0" : ""].filter(Boolean).join("&"), k = await t.get(`${H}/state${x ? `?${x}` : ""}`);
       s(k), h(null);
@@ -132,7 +135,7 @@ function ge() {
       f(!1);
     }
   }, [t, i]);
-  return q(() => {
+  return U(() => {
     u();
     const c = () => {
       const x = ((a == null ? void 0 : a.stats.live_runs) ?? 0) > 0;
@@ -145,12 +148,12 @@ function ge() {
     };
   }, [u]), { state: a, error: p, loading: n, reload: () => u(!0), api: t, showAll: i, setShowAll: d };
 }
-function R({ tone: t, children: a }) {
+function I({ tone: t, children: a }) {
   return /* @__PURE__ */ e("span", { className: "sf-pill", style: { background: `color-mix(in srgb, ${t} 16%, transparent)`, color: t }, children: a });
 }
-function U({ o: t, live: a }) {
-  const s = Z(t);
-  return /* @__PURE__ */ r(R, { tone: s, children: [
+function V({ o: t, live: a }) {
+  const s = te(t);
+  return /* @__PURE__ */ r(I, { tone: s, children: [
     /* @__PURE__ */ e("span", { className: `sf-dot ${a ? "sf-pulse" : ""}`, style: { background: s, width: 7, height: 7 } }),
     t
   ] });
@@ -158,13 +161,13 @@ function U({ o: t, live: a }) {
 function ve({ value: t, onChange: a, items: s }) {
   return /* @__PURE__ */ e("div", { className: "sf-tabs", role: "tablist", children: s.map(([p, h]) => /* @__PURE__ */ e("button", { role: "tab", "aria-selected": t === p, "data-on": t === p, className: "sf-tab", onClick: () => a(p), children: h }, p)) });
 }
-function ee({ title: t, sub: a, onClose: s, children: p, wide: h, actions: n }) {
-  return q(() => {
+function re({ title: t, sub: a, onClose: s, children: p, wide: h, actions: n }) {
+  return U(() => {
     const f = (i) => {
       i.key === "Escape" && s();
     };
     return window.addEventListener("keydown", f), () => window.removeEventListener("keydown", f);
-  }, [s]), /* @__PURE__ */ r($, { children: [
+  }, [s]), /* @__PURE__ */ r(z, { children: [
     /* @__PURE__ */ e("div", { className: "sf-scrim", onClick: s }),
     /* @__PURE__ */ r("aside", { className: "sf-drawer", "data-wide": !!h, role: "dialog", "aria-modal": "true", children: [
       /* @__PURE__ */ r("div", { className: "sf-dhead", children: [
@@ -188,21 +191,21 @@ function xe({ it: t, onOpen: a }) {
         "#",
         t.issue
       ] }),
-      s && /* @__PURE__ */ r(R, { tone: "var(--accent)", children: [
+      s && /* @__PURE__ */ r(I, { tone: "var(--accent)", children: [
         /* @__PURE__ */ e("span", { className: "sf-dot sf-pulse", style: { background: "var(--accent)", width: 7, height: 7 } }),
-        B(t.live_agent)
+        F(t.live_agent)
       ] }),
       !s && ((p = t.pr) == null ? void 0 : p.checks) && /* @__PURE__ */ e("span", { className: "sf-dot", title: `CI ${t.pr.checks}`, style: { background: t.pr.checks === "passing" ? "var(--ok)" : t.pr.checks === "failing" ? "var(--danger)" : "var(--warn)" } })
     ] }),
     /* @__PURE__ */ e("div", { className: "sf-cardtitle", children: t.title }),
     /* @__PURE__ */ r("div", { className: "sf-meta", children: [
       /* @__PURE__ */ r("span", { title: "Last activity", children: [
-        /* @__PURE__ */ e(de, { size: 11, style: { verticalAlign: -1 } }),
+        /* @__PURE__ */ e(X, { size: 11, style: { verticalAlign: -1 } }),
         " ",
-        z(t.last_activity ?? t.stage_since)
+        $(t.last_activity ?? t.stage_since)
       ] }),
       t.pr && /* @__PURE__ */ r("span", { children: [
-        /* @__PURE__ */ e(ce, { size: 11, style: { verticalAlign: -1 } }),
+        /* @__PURE__ */ e(Q, { size: 11, style: { verticalAlign: -1 } }),
         " PR ",
         t.pr.number
       ] }),
@@ -211,19 +214,19 @@ function xe({ it: t, onOpen: a }) {
         " rounds"
       ] }),
       t.credits > 0 && /* @__PURE__ */ r("span", { children: [
-        /* @__PURE__ */ e(K, { size: 11, style: { verticalAlign: -1 } }),
+        /* @__PURE__ */ e(q, { size: 11, style: { verticalAlign: -1 } }),
         " ",
         t.credits.toFixed(1)
       ] })
     ] }),
-    t.hops.length > 0 && /* @__PURE__ */ e("div", { className: "sf-hops", title: t.hops.map((h) => `${B(h.agent)} ${h.outcome} ${F(h.duration_ms)}`).join(`
-`), children: t.hops.map((h) => /* @__PURE__ */ e("span", { className: `sf-hop ${h.live ? "sf-pulse" : ""}`, style: { background: L(h.agent), opacity: h.outcome === "completed" || h.live ? 0.9 : 0.35 } }, h.id)) })
+    t.hops.length > 0 && /* @__PURE__ */ e("div", { className: "sf-hops", title: t.hops.map((h) => `${F(h.agent)} ${h.outcome} ${L(h.duration_ms)}`).join(`
+`), children: t.hops.map((h) => /* @__PURE__ */ e("span", { className: `sf-hop ${h.live ? "sf-pulse" : ""}`, style: { background: S(h.agent), opacity: h.outcome === "completed" || h.live ? 0.9 : 0.35 } }, h.id)) })
   ] });
 }
 function be({ state: t, onOpen: a, showAll: s, onToggleAll: p }) {
   const h = /* @__PURE__ */ new Set(["planning", "needs-owner", "implementing", "review", "ready"]), n = t.stages.filter((i) => h.has(i.id) || t.board.some((d) => d.stage === i.id)), f = t.board_total - t.board.length;
-  return /* @__PURE__ */ r($, { children: [
-    /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between", marginBottom: 10, fontSize: 12, color: "var(--muted)" }, children: [
+  return /* @__PURE__ */ r(z, { children: [
+    /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between", marginBottom: 10, fontSize: 12, color: "var(--muted)", flexWrap: "wrap", gap: 10 }, children: [
       /* @__PURE__ */ r("span", { children: [
         s ? `All ${t.board_total} items` : `${t.board.length} most recently active${f > 0 ? ` · ${f} older hidden` : ""}`,
         ", newest first in each column"
@@ -236,12 +239,53 @@ function be({ state: t, onOpen: a, showAll: s, onToggleAll: p }) {
         /* @__PURE__ */ e("button", { role: "tab", "aria-selected": s, "data-on": s, onClick: () => p(!0), children: "All" })
       ] })
     ] }),
+    /* @__PURE__ */ r("div", { className: "sf-legend", "aria-label": "Legend", children: [
+      /* @__PURE__ */ e("span", { className: "sf-legend-h", children: "Bars: one per agent hop, oldest left" }),
+      ["delivery-planner", "delivery-implementer", "delivery-reviewer", "delivery-scribe", "github-worker"].map((i) => /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e("i", { className: "sf-hop", style: { background: S(i), width: 18, minWidth: 18, display: "inline-block" } }),
+        " ",
+        F(i)
+      ] }, i)),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e("i", { className: "sf-hop", style: { background: "var(--muted)", opacity: 0.35, width: 18, minWidth: 18, display: "inline-block" } }),
+        " failed or stopped"
+      ] }),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e("i", { className: "sf-hop sf-pulse", style: { background: "var(--accent)", width: 18, minWidth: 18, display: "inline-block" } }),
+        " running"
+      ] }),
+      /* @__PURE__ */ e("span", { className: "sf-legend-h", style: { marginLeft: 8 }, children: "Card" }),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: "var(--ok)" } }),
+        " CI passing"
+      ] }),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: "var(--warn)" } }),
+        " CI pending"
+      ] }),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: "var(--danger)" } }),
+        " CI failing"
+      ] }),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e(X, { size: 11, style: { verticalAlign: -1 } }),
+        " last activity"
+      ] }),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e(Q, { size: 11, style: { verticalAlign: -1 } }),
+        " PR"
+      ] }),
+      /* @__PURE__ */ r("span", { children: [
+        /* @__PURE__ */ e(q, { size: 11, style: { verticalAlign: -1 } }),
+        " credits"
+      ] })
+    ] }),
     /* @__PURE__ */ e("div", { className: "sf-board", children: n.map((i) => {
       const d = t.board.filter((m) => m.stage === i.id);
       return /* @__PURE__ */ r("div", { className: "sf-col", children: [
         /* @__PURE__ */ r("div", { className: "sf-colhead", children: [
           /* @__PURE__ */ r("span", { className: "sf-row", children: [
-            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: Y[i.id] } }),
+            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: ee[i.id] } }),
             i.label
           ] }),
           /* @__PURE__ */ e("span", { className: "sf-count", children: d.length })
@@ -252,16 +296,16 @@ function be({ state: t, onOpen: a, showAll: s, onToggleAll: p }) {
     }) })
   ] });
 }
-function we({ it: t, runs: a, onClose: s, onWatch: p }) {
+function ye({ it: t, runs: a, onClose: s, onWatch: p }) {
   var n, f;
   const h = t.hops.map((i) => ({ hop: i, run: a.find((d) => d.id === i.id) }));
-  return /* @__PURE__ */ r(ee, { onClose: s, title: /* @__PURE__ */ r("span", { children: [
+  return /* @__PURE__ */ r(re, { onClose: s, title: /* @__PURE__ */ r("span", { children: [
     "#",
     t.issue,
     " ",
     t.title
   ] }), sub: /* @__PURE__ */ r("span", { className: "sf-row", children: [
-    /* @__PURE__ */ e(R, { tone: Y[t.stage], children: t.stage }),
+    /* @__PURE__ */ e(I, { tone: ee[t.stage], children: t.stage }),
     /* @__PURE__ */ r("a", { className: "sf-link", href: t.url, target: "_blank", rel: "noreferrer", children: [
       "issue ",
       /* @__PURE__ */ e(P, { size: 11 })
@@ -283,7 +327,7 @@ function we({ it: t, runs: a, onClose: s, onWatch: p }) {
       /* @__PURE__ */ e("dt", { children: "Opened" }),
       /* @__PURE__ */ e("dd", { children: G(t.created_at) }),
       /* @__PURE__ */ e("dt", { children: "In stage since" }),
-      /* @__PURE__ */ e("dd", { children: z(t.stage_since) }),
+      /* @__PURE__ */ e("dd", { children: $(t.stage_since) }),
       /* @__PURE__ */ e("dt", { children: "Review rounds" }),
       /* @__PURE__ */ e("dd", { children: t.rounds }),
       /* @__PURE__ */ e("dt", { children: "Credits" }),
@@ -298,19 +342,19 @@ function we({ it: t, runs: a, onClose: s, onWatch: p }) {
     /* @__PURE__ */ e("div", { className: "sf-tl", children: h.map(({ hop: i, run: d }) => {
       var m, u, c;
       return /* @__PURE__ */ r("div", { className: "sf-tli", children: [
-        /* @__PURE__ */ e("span", { className: `sf-dot ${i.live ? "sf-pulse" : ""}`, style: { background: L(i.agent) } }),
+        /* @__PURE__ */ e("span", { className: `sf-dot ${i.live ? "sf-pulse" : ""}`, style: { background: S(i.agent) } }),
         /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between" }, children: [
           /* @__PURE__ */ r("div", { children: [
-            /* @__PURE__ */ e("strong", { style: { color: "var(--text-strong)", fontSize: 13 }, children: B(i.agent) }),
+            /* @__PURE__ */ e("strong", { style: { color: "var(--text-strong)", fontSize: 13 }, children: F(i.agent) }),
             /* @__PURE__ */ e("span", { style: { color: "var(--muted)", fontSize: 12, marginLeft: 8 }, children: i.kind })
           ] }),
-          /* @__PURE__ */ e(U, { o: i.outcome, live: i.live })
+          /* @__PURE__ */ e(V, { o: i.outcome, live: i.live })
         ] }),
         /* @__PURE__ */ r("div", { className: "sf-meta", children: [
           /* @__PURE__ */ e("span", { children: G(i.started_at) }),
-          /* @__PURE__ */ e("span", { children: F(i.duration_ms) }),
+          /* @__PURE__ */ e("span", { children: L(i.duration_ms) }),
           i.credits != null && /* @__PURE__ */ r("span", { children: [
-            /* @__PURE__ */ e(K, { size: 11, style: { verticalAlign: -1 } }),
+            /* @__PURE__ */ e(q, { size: 11, style: { verticalAlign: -1 } }),
             " ",
             i.credits.toFixed(2)
           ] }),
@@ -320,7 +364,7 @@ function we({ it: t, runs: a, onClose: s, onWatch: p }) {
             " tool calls"
           ] }),
           (d == null ? void 0 : d.session_key) && /* @__PURE__ */ r("button", { className: "sf-btn", style: { padding: "2px 8px" }, onClick: () => p(d), children: [
-            /* @__PURE__ */ e(X, { size: 12 }),
+            /* @__PURE__ */ e(Y, { size: 12 }),
             " ",
             i.live ? "watch live" : "steps"
           ] })
@@ -330,8 +374,8 @@ function we({ it: t, runs: a, onClose: s, onWatch: p }) {
     }) })
   ] });
 }
-function ye({ runs: t, onWatch: a }) {
-  return /* @__PURE__ */ r(A, { children: [
+function we({ runs: t, onWatch: a }) {
+  return /* @__PURE__ */ r(R, { children: [
     /* @__PURE__ */ r("table", { className: "sf-table", children: [
       /* @__PURE__ */ e("thead", { children: /* @__PURE__ */ r("tr", { children: [
         /* @__PURE__ */ e("th", { children: "When" }),
@@ -348,23 +392,23 @@ function ye({ runs: t, onWatch: a }) {
       /* @__PURE__ */ e("tbody", { children: t.map((s) => {
         var p, h, n, f, i, d;
         return /* @__PURE__ */ r("tr", { children: [
-          /* @__PURE__ */ e("td", { title: G(s.started_at), children: z(s.started_at) }),
+          /* @__PURE__ */ e("td", { title: G(s.started_at), children: $(s.started_at) }),
           /* @__PURE__ */ e("td", { children: /* @__PURE__ */ r("span", { className: "sf-row", children: [
-            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: L(s.agent) } }),
-            B(s.agent)
+            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: S(s.agent) } }),
+            F(s.agent)
           ] }) }),
           /* @__PURE__ */ e("td", { className: "sf-mono", children: s.kind }),
           /* @__PURE__ */ r("td", { children: [
             (p = s.session) != null && p.issue ? `#${s.session.issue}` : "",
             (h = s.session) != null && h.pr ? ` PR ${s.session.pr}` : ""
           ] }),
-          /* @__PURE__ */ e("td", { children: /* @__PURE__ */ e(U, { o: s.outcome, live: s.live }) }),
-          /* @__PURE__ */ e("td", { children: F(s.duration_ms) }),
+          /* @__PURE__ */ e("td", { children: /* @__PURE__ */ e(V, { o: s.outcome, live: s.live }) }),
+          /* @__PURE__ */ e("td", { children: L(s.duration_ms) }),
           /* @__PURE__ */ e("td", { className: "sf-mono", children: ((n = s.session) == null ? void 0 : n.model) ?? "–" }),
           /* @__PURE__ */ e("td", { children: ((f = s.session) == null ? void 0 : f.tool_calls) ?? "–" }),
           /* @__PURE__ */ e("td", { children: (i = s.session) != null && i.credits ? s.session.credits.toFixed(2) : "–" }),
           /* @__PURE__ */ e("td", { children: s.session_key && ((d = s.session) == null ? void 0 : d.found) && /* @__PURE__ */ r("button", { className: "sf-btn", onClick: () => a(s), children: [
-            /* @__PURE__ */ e(X, { size: 12 }),
+            /* @__PURE__ */ e(Y, { size: 12 }),
             " ",
             s.live ? "watch" : "steps"
           ] }) })
@@ -374,35 +418,35 @@ function ye({ runs: t, onWatch: a }) {
     t.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "No webhook runs recorded for this repository on this gateway." })
   ] });
 }
-const _ = (t) => t < 1e3 ? `${Math.round(t)}ms` : t < 6e4 ? `${(t / 1e3).toFixed(t < 1e4 ? 2 : 1)}s` : `${Math.floor(t / 6e4)}m ${Math.round(t % 6e4 / 1e3)}s`, V = (t) => {
+const _ = (t) => t < 1e3 ? `${Math.round(t)}ms` : t < 6e4 ? `${(t / 1e3).toFixed(t < 1e4 ? 2 : 1)}s` : `${Math.floor(t / 6e4)}m ${Math.round(t % 6e4 / 1e3)}s`, J = (t) => {
   if (t.status === "error" || t.status === "denied") return "var(--danger)";
   if (t.kind === "run") return "var(--text)";
   if (t.kind === "turn") return "var(--muted-strong)";
   if (t.kind === "model") return "var(--info)";
   const a = t.meta.kind || "";
   return a === "read" || a === "read_files" || a === "search" ? "var(--muted)" : a === "edit" || a === "write" ? "var(--warn)" : "var(--accent)";
-}, W = (t) => t.kind === "tool" ? t.meta.title && t.meta.title !== t.name ? t.meta.title : t.name : t.kind === "model" ? `model · ${t.output ? "said" : "thought"}` : t.name;
+}, E = (t) => t.kind === "tool" ? t.meta.title && t.meta.title !== t.name ? t.meta.title : t.name : t.kind === "model" ? `model · ${t.output ? "said" : "thought"}` : t.name;
 function ke({ spans: t, live: a }) {
-  const [s, p] = w(/* @__PURE__ */ new Set()), [h, n] = w(null), [f, i] = w(""), d = t[0], m = d.start, u = Math.max(1e-3, d.end - d.start), c = O(() => {
-    const o = /* @__PURE__ */ new Map();
+  const [s, p] = y(/* @__PURE__ */ new Set()), [h, n] = y(null), [f, i] = y(""), d = t[0], m = d.start, u = Math.max(1e-3, d.end - d.start), c = O(() => {
+    const l = /* @__PURE__ */ new Map();
     for (const b of t) {
-      const y = o.get(b.parent) ?? [];
-      y.push(b), o.set(b.parent, y);
+      const w = l.get(b.parent) ?? [];
+      w.push(b), l.set(b.parent, w);
     }
-    return o;
+    return l;
   }, [t]), x = O(() => {
-    const o = [], b = f.trim().toLowerCase(), y = (S) => !b || `${W(S)} ${S.input} ${S.name}`.toLowerCase().includes(b), D = (S, I) => {
-      var E;
-      for (const C of c.get(S) ?? []) {
-        const te = ((E = c.get(C.id)) == null ? void 0 : E.length) ?? 0;
-        (y(C) || C.kind !== "tool" && C.kind !== "model") && o.push({ sp: C, depth: I, kids: te }), s.has(C.id) || D(C.id, I + 1);
+    const l = [], b = f.trim().toLowerCase(), w = (C) => !b || `${E(C)} ${C.input} ${C.name}`.toLowerCase().includes(b), W = (C, B) => {
+      var D;
+      for (const M of c.get(C) ?? []) {
+        const ae = ((D = c.get(M.id)) == null ? void 0 : D.length) ?? 0;
+        (w(M) || M.kind !== "tool" && M.kind !== "model") && l.push({ sp: M, depth: B, kids: ae }), s.has(M.id) || W(M.id, B + 1);
       }
     };
-    return D(null, 0), o;
-  }, [c, s, f]), k = (o) => p((b) => {
-    const y = new Set(b);
-    return y.has(o) ? y.delete(o) : y.add(o), y;
-  }), g = t.filter((o) => o.kind === "tool").reduce((o, b) => o + (b.end - b.start) * 1e3, 0), v = t.filter((o) => o.kind === "model").reduce((o, b) => o + (b.end - b.start) * 1e3, 0), j = t.filter((o) => o.status === "error" || o.status === "denied").length, l = t.find((o) => o.id === h) ?? null;
+    return W(null, 0), l;
+  }, [c, s, f]), k = (l) => p((b) => {
+    const w = new Set(b);
+    return w.has(l) ? w.delete(l) : w.add(l), w;
+  }), g = t.filter((l) => l.kind === "tool").reduce((l, b) => l + (b.end - b.start) * 1e3, 0), v = t.filter((l) => l.kind === "model").reduce((l, b) => l + (b.end - b.start) * 1e3, 0), j = t.filter((l) => l.status === "error" || l.status === "denied").length, o = t.find((l) => l.id === h) ?? null;
   return /* @__PURE__ */ r("div", { children: [
     /* @__PURE__ */ r("div", { className: "sf-tr-sum", children: [
       /* @__PURE__ */ r("span", { children: [
@@ -440,46 +484,46 @@ function ke({ spans: t, live: a }) {
       a && /* @__PURE__ */ e("span", { style: { color: "var(--accent)" }, children: "live" })
     ] }),
     /* @__PURE__ */ r("div", { className: "sf-tr-tools", children: [
-      /* @__PURE__ */ e("input", { value: f, onChange: (o) => i(o.target.value), placeholder: "Filter spans by name, command or path…", "aria-label": "Filter spans" }),
+      /* @__PURE__ */ e("input", { value: f, onChange: (l) => i(l.target.value), placeholder: "Filter spans by name, command or path…", "aria-label": "Filter spans" }),
       /* @__PURE__ */ e("button", { className: "sf-btn", onClick: () => p(/* @__PURE__ */ new Set()), children: "Expand all" }),
-      /* @__PURE__ */ e("button", { className: "sf-btn", onClick: () => p(new Set(t.filter((o) => o.kind === "turn").map((o) => o.id))), children: "Turns only" })
+      /* @__PURE__ */ e("button", { className: "sf-btn", onClick: () => p(new Set(t.filter((l) => l.kind === "turn").map((l) => l.id))), children: "Turns only" })
     ] }),
     /* @__PURE__ */ r("div", { className: "sf-tr", role: "tree", children: [
       /* @__PURE__ */ r("div", { className: "sf-tr-head", children: [
         /* @__PURE__ */ e("div", { children: "Span" }),
-        /* @__PURE__ */ e("div", { className: "sf-tr-axis", children: [0, 0.25, 0.5, 0.75, 1].map((o) => /* @__PURE__ */ e("span", { style: { left: `calc(${o * 100}% - ${o === 1 ? 24 : o === 0 ? -6 : 0}px)` }, children: _(o * u * 1e3) }, o)) })
+        /* @__PURE__ */ e("div", { className: "sf-tr-axis", children: [0, 0.25, 0.5, 0.75, 1].map((l) => /* @__PURE__ */ e("span", { style: { left: `calc(${l * 100}% - ${l === 1 ? 24 : l === 0 ? -6 : 0}px)` }, children: _(l * u * 1e3) }, l)) })
       ] }),
-      x.map(({ sp: o, depth: b, kids: y }) => {
-        const D = (o.start - m) / u * 100, S = Math.max(0.3, (o.end - o.start) / u * 100), I = V(o);
-        return /* @__PURE__ */ r("div", { className: "sf-tr-row", role: "treeitem", "aria-selected": h === o.id, "data-sel": h === o.id, onClick: () => n(o.id === h ? null : o.id), children: [
+      x.map(({ sp: l, depth: b, kids: w }) => {
+        const W = (l.start - m) / u * 100, C = Math.max(0.3, (l.end - l.start) / u * 100), B = J(l);
+        return /* @__PURE__ */ r("div", { className: "sf-tr-row", role: "treeitem", "aria-selected": h === l.id, "data-sel": h === l.id, onClick: () => n(l.id === h ? null : l.id), children: [
           /* @__PURE__ */ r("div", { style: { paddingLeft: 10 + b * 16 }, children: [
-            /* @__PURE__ */ e("span", { className: "sf-caret", onClick: (E) => {
-              E.stopPropagation(), y && k(o.id);
-            }, "aria-hidden": "true", children: y ? s.has(o.id) ? "▸" : "▾" : "" }),
-            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: I, width: 8, height: 8, flex: "none" } }),
-            /* @__PURE__ */ e("span", { className: "sf-tr-name", title: W(o), children: W(o) }),
-            o.kind === "tool" && o.input && /* @__PURE__ */ e("span", { className: "sf-tr-sub", title: o.input, children: o.input }),
-            o.kind === "turn" && o.meta.credits != null && /* @__PURE__ */ r("span", { className: "sf-chip", children: [
-              o.meta.credits.toFixed(2),
+            /* @__PURE__ */ e("span", { className: "sf-caret", onClick: (D) => {
+              D.stopPropagation(), w && k(l.id);
+            }, "aria-hidden": "true", children: w ? s.has(l.id) ? "▸" : "▾" : "" }),
+            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: B, width: 8, height: 8, flex: "none" } }),
+            /* @__PURE__ */ e("span", { className: "sf-tr-name", title: E(l), children: E(l) }),
+            l.kind === "tool" && l.input && /* @__PURE__ */ e("span", { className: "sf-tr-sub", title: l.input, children: l.input }),
+            l.kind === "turn" && l.meta.credits != null && /* @__PURE__ */ r("span", { className: "sf-chip", children: [
+              l.meta.credits.toFixed(2),
               " cr"
             ] })
           ] }),
           /* @__PURE__ */ r("div", { children: [
-            /* @__PURE__ */ e("div", { className: "sf-tr-track", children: /* @__PURE__ */ e("span", { className: "sf-tr-bar", "data-status": o.status, style: { left: `${D}%`, width: `${S}%`, background: I } }) }),
-            /* @__PURE__ */ e("span", { className: "sf-tr-dur", children: _((o.end - o.start) * 1e3) })
+            /* @__PURE__ */ e("div", { className: "sf-tr-track", children: /* @__PURE__ */ e("span", { className: "sf-tr-bar", "data-status": l.status, style: { left: `${W}%`, width: `${C}%`, background: B } }) }),
+            /* @__PURE__ */ e("span", { className: "sf-tr-dur", children: _((l.end - l.start) * 1e3) })
           ] })
-        ] }, o.id);
+        ] }, l.id);
       })
     ] }),
-    l && /* @__PURE__ */ r("div", { className: "sf-tr-detail", children: [
+    o && /* @__PURE__ */ r("div", { className: "sf-tr-detail", children: [
       /* @__PURE__ */ r("div", { className: "sf-row", style: { marginBottom: 6 }, children: [
-        /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: V(l), width: 9, height: 9 } }),
-        /* @__PURE__ */ e("b", { style: { color: "var(--text-strong)" }, children: W(l) }),
-        /* @__PURE__ */ e(R, { tone: l.status === "ok" ? "var(--ok)" : l.status === "running" ? "var(--accent)" : l.status === "warn" ? "var(--warn)" : "var(--danger)", children: l.status }),
+        /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: J(o), width: 9, height: 9 } }),
+        /* @__PURE__ */ e("b", { style: { color: "var(--text-strong)" }, children: E(o) }),
+        /* @__PURE__ */ e(I, { tone: o.status === "ok" ? "var(--ok)" : o.status === "running" ? "var(--accent)" : o.status === "warn" ? "var(--warn)" : "var(--danger)", children: o.status }),
         /* @__PURE__ */ r("span", { style: { color: "var(--muted)", fontSize: 12 }, children: [
-          l.kind,
-          l.meta.tool ? ` · ${l.meta.tool}` : "",
-          l.meta.kind ? ` · ${l.meta.kind}` : ""
+          o.kind,
+          o.meta.tool ? ` · ${o.meta.tool}` : "",
+          o.meta.kind ? ` · ${o.meta.kind}` : ""
         ] })
       ] }),
       /* @__PURE__ */ r("div", { className: "sf-tr-kv", children: [
@@ -487,67 +531,67 @@ function ke({ spans: t, live: a }) {
           "start ",
           /* @__PURE__ */ r("b", { children: [
             "+",
-            _((l.start - m) * 1e3)
+            _((o.start - m) * 1e3)
           ] })
         ] }),
         /* @__PURE__ */ r("span", { children: [
           "duration ",
-          /* @__PURE__ */ e("b", { children: _((l.end - l.start) * 1e3) })
+          /* @__PURE__ */ e("b", { children: _((o.end - o.start) * 1e3) })
         ] }),
-        l.meta.approval_ms != null && /* @__PURE__ */ r("span", { children: [
+        o.meta.approval_ms != null && /* @__PURE__ */ r("span", { children: [
           "approval wait ",
-          /* @__PURE__ */ e("b", { children: _(l.meta.approval_ms) })
+          /* @__PURE__ */ e("b", { children: _(o.meta.approval_ms) })
         ] }),
-        l.meta.credits != null && l.kind !== "run" && /* @__PURE__ */ r("span", { children: [
+        o.meta.credits != null && o.kind !== "run" && /* @__PURE__ */ r("span", { children: [
           "credits ",
-          /* @__PURE__ */ e("b", { children: l.meta.credits.toFixed(3) })
+          /* @__PURE__ */ e("b", { children: o.meta.credits.toFixed(3) })
         ] }),
-        l.meta.model_calls != null && /* @__PURE__ */ r("span", { children: [
+        o.meta.model_calls != null && /* @__PURE__ */ r("span", { children: [
           "model calls ",
-          /* @__PURE__ */ e("b", { children: l.meta.model_calls })
+          /* @__PURE__ */ e("b", { children: o.meta.model_calls })
         ] }),
-        l.meta.context_pct != null && /* @__PURE__ */ r("span", { children: [
+        o.meta.context_pct != null && /* @__PURE__ */ r("span", { children: [
           "context used ",
           /* @__PURE__ */ r("b", { children: [
-            l.meta.context_pct.toFixed(1),
+            o.meta.context_pct.toFixed(1),
             "%"
           ] })
         ] }),
-        l.meta.model && /* @__PURE__ */ r("span", { children: [
+        o.meta.model && /* @__PURE__ */ r("span", { children: [
           "model ",
-          /* @__PURE__ */ e("b", { children: l.meta.model })
+          /* @__PURE__ */ e("b", { children: o.meta.model })
         ] })
       ] }),
-      l.input && /* @__PURE__ */ r($, { children: [
-        /* @__PURE__ */ e("div", { className: "sf-label", children: l.kind === "turn" ? "prompt" : "input" }),
-        /* @__PURE__ */ e("pre", { className: "sf-pre", children: l.input })
+      o.input && /* @__PURE__ */ r(z, { children: [
+        /* @__PURE__ */ e("div", { className: "sf-label", children: o.kind === "turn" ? "prompt" : "input" }),
+        /* @__PURE__ */ e("pre", { className: "sf-pre", children: o.input })
       ] }),
-      l.output && /* @__PURE__ */ r($, { children: [
-        /* @__PURE__ */ e("div", { className: "sf-label", children: l.kind === "turn" ? "stop reason" : "output" }),
-        /* @__PURE__ */ e("pre", { className: "sf-pre", children: l.output })
+      o.output && /* @__PURE__ */ r(z, { children: [
+        /* @__PURE__ */ e("div", { className: "sf-label", children: o.kind === "turn" ? "stop reason" : "output" }),
+        /* @__PURE__ */ e("pre", { className: "sf-pre", children: o.output })
       ] }),
-      !l.input && !l.output && /* @__PURE__ */ e("div", { className: "sf-empty", style: { padding: 8 }, children: "No input or output recorded for this span." })
+      !o.input && !o.output && /* @__PURE__ */ e("div", { className: "sf-empty", style: { padding: 8 }, children: "No input or output recorded for this span." })
     ] })
   ] });
 }
 function Ne({ run: t, api: a, onClose: s }) {
   var k;
-  const [p, h] = w("steps"), [n, f] = w(null), [i, d] = w(null), [m, u] = w(null);
-  q(() => {
+  const [p, h] = y("steps"), [n, f] = y(null), [i, d] = y(null), [m, u] = y(null);
+  U(() => {
     let g = !0;
     const v = async () => {
       try {
         if (p === "steps") {
-          const l = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/steps`);
+          const o = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/steps`);
           if (!g) return;
-          l.error ? u(l.error) : (f(l.steps), u(null));
+          o.error ? u(o.error) : (f(o.steps), u(null));
         } else {
-          const l = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/trace`);
+          const o = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/trace`);
           if (!g) return;
-          l.error ? u(l.error) : (d(l.found ? l.spans : []), u(null));
+          o.error ? u(o.error) : (d(o.found ? o.spans : []), u(null));
         }
-      } catch (l) {
-        g && u(String(l));
+      } catch (o) {
+        g && u(String(o));
       }
     };
     v();
@@ -558,18 +602,18 @@ function Ne({ run: t, api: a, onClose: s }) {
   }, [a, t.id, t.live, p]);
   const c = t.session, x = /* @__PURE__ */ e("div", { className: "sf-views", role: "tablist", "aria-label": "Transcript view", children: ["steps", "trace", "json"].map((g) => /* @__PURE__ */ e("button", { role: "tab", "aria-selected": p === g, "data-on": p === g, onClick: () => h(g), children: g === "steps" ? "Steps" : g === "trace" ? "Trace" : "JSON" }, g)) });
   return /* @__PURE__ */ r(
-    ee,
+    re,
     {
       onClose: s,
       wide: p !== "steps",
       actions: x,
       title: /* @__PURE__ */ r("span", { className: "sf-row", children: [
-        /* @__PURE__ */ e(Q, { size: 16, style: { color: L(t.agent) } }),
-        B(t.agent),
+        /* @__PURE__ */ e(Z, { size: 16, style: { color: S(t.agent) } }),
+        F(t.agent),
         " ",
         /* @__PURE__ */ e("span", { style: { color: "var(--muted)", fontWeight: 400 }, children: t.kind }),
         " ",
-        /* @__PURE__ */ e(U, { o: t.outcome, live: t.live })
+        /* @__PURE__ */ e(V, { o: t.outcome, live: t.live })
       ] }),
       sub: /* @__PURE__ */ r("span", { children: [
         (c == null ? void 0 : c.title) ?? "",
@@ -578,7 +622,7 @@ function Ne({ run: t, api: a, onClose: s }) {
         " ",
         c != null && c.effort ? `(${c.effort})` : "",
         " · ",
-        F(t.duration_ms),
+        L(t.duration_ms),
         " · ",
         (c == null ? void 0 : c.tool_calls) ?? 0,
         " tool calls · ",
@@ -589,7 +633,7 @@ function Ne({ run: t, api: a, onClose: s }) {
       ] }),
       children: [
         t.detail && /* @__PURE__ */ r("div", { className: "sf-warnbox", children: [
-          /* @__PURE__ */ e(J, { size: 13, style: { verticalAlign: -2 } }),
+          /* @__PURE__ */ e(K, { size: 13, style: { verticalAlign: -2 } }),
           " ",
           t.detail
         ] }),
@@ -612,10 +656,10 @@ function Ne({ run: t, api: a, onClose: s }) {
           ] }),
           /* @__PURE__ */ e("span", { style: { color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }, children: g.t ? new Date(g.t).toLocaleTimeString() : "" })
         ] }, v) : g.kind === "text" ? /* @__PURE__ */ r("div", { className: "sf-step", children: [
-          /* @__PURE__ */ e("span", { className: "sf-dot", style: { marginTop: 5, background: L(t.agent) } }),
+          /* @__PURE__ */ e("span", { className: "sf-dot", style: { marginTop: 5, background: S(t.agent) } }),
           /* @__PURE__ */ e("div", { className: "sf-text", style: { flex: 1 }, children: g.text })
         ] }, v) : /* @__PURE__ */ r("div", { className: "sf-step", style: { color: "var(--muted)" }, children: [
-          /* @__PURE__ */ e(ie, { size: 14 }),
+          /* @__PURE__ */ e(de, { size: 14 }),
           " turn ended (",
           g.reason,
           ")"
@@ -641,17 +685,17 @@ function _e({ state: t }) {
     }
     return n;
   }, [t.runs]), p = Math.max(1, ...s.map((n) => n.completed + n.failed)), h = Math.max(1, ...s.map((n) => n.credits));
-  return /* @__PURE__ */ r($, { children: [
-    /* @__PURE__ */ e("div", { className: "sf-grid", style: { marginBottom: 16 }, children: t.agents.map((n) => /* @__PURE__ */ r("div", { className: "sf-agent", style: { "--sf-c": L(n.id) }, children: [
+  return /* @__PURE__ */ r(z, { children: [
+    /* @__PURE__ */ e("div", { className: "sf-grid", style: { marginBottom: 16 }, children: t.agents.map((n) => /* @__PURE__ */ r("div", { className: "sf-agent", style: { "--sf-c": S(n.id) }, children: [
       /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between" }, children: [
         /* @__PURE__ */ r("div", { className: "sf-row", children: [
-          /* @__PURE__ */ e(Q, { size: 16, style: { color: L(n.id) } }),
+          /* @__PURE__ */ e(Z, { size: 16, style: { color: S(n.id) } }),
           /* @__PURE__ */ e("strong", { style: { color: "var(--text-strong)" }, children: n.label })
         ] }),
-        n.live > 0 ? /* @__PURE__ */ r(R, { tone: "var(--accent)", children: [
+        n.live > 0 ? /* @__PURE__ */ r(I, { tone: "var(--accent)", children: [
           /* @__PURE__ */ e("span", { className: "sf-dot sf-pulse", style: { background: "var(--accent)", width: 7, height: 7 } }),
           "running"
-        ] }) : n.installed ? /* @__PURE__ */ e(R, { tone: "var(--ok)", children: "template installed" }) : /* @__PURE__ */ e(R, { tone: "var(--danger)", children: "template missing" })
+        ] }) : n.installed ? /* @__PURE__ */ e(I, { tone: "var(--ok)", children: "template installed" }) : /* @__PURE__ */ e(I, { tone: "var(--danger)", children: "template missing" })
       ] }),
       /* @__PURE__ */ e("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 4 }, children: n.role }),
       /* @__PURE__ */ r("dl", { className: "sf-kv", children: [
@@ -669,9 +713,9 @@ function _e({ state: t }) {
         ] }),
         /* @__PURE__ */ e("dt", { children: "Avg / p90" }),
         /* @__PURE__ */ r("dd", { children: [
-          F(n.avg_duration_ms),
+          L(n.avg_duration_ms),
           " / ",
-          F(n.p90_duration_ms)
+          L(n.p90_duration_ms)
         ] }),
         /* @__PURE__ */ e("dt", { children: "Avg credits" }),
         /* @__PURE__ */ e("dd", { children: n.avg_credits ?? "–" }),
@@ -679,9 +723,9 @@ function _e({ state: t }) {
         /* @__PURE__ */ e("dd", { className: "sf-mono", children: n.model ?? "–" }),
         /* @__PURE__ */ e("dt", { children: "Last run" }),
         /* @__PURE__ */ r("dd", { children: [
-          z(n.last_run_at),
+          $(n.last_run_at),
           " ",
-          n.last_outcome && /* @__PURE__ */ r("span", { style: { color: Z(n.last_outcome) }, children: [
+          n.last_outcome && /* @__PURE__ */ r("span", { style: { color: te(n.last_outcome) }, children: [
             "· ",
             n.last_outcome
           ] })
@@ -690,7 +734,7 @@ function _e({ state: t }) {
       /* @__PURE__ */ e("div", { className: "sf-bar", title: "Average duration relative to the slowest agent", children: /* @__PURE__ */ e("i", { style: { width: `${Math.round(100 * (n.avg_duration_ms ?? 0) / a)}%` } }) })
     ] }, n.id)) }),
     /* @__PURE__ */ r("div", { className: "sf-grid", children: [
-      /* @__PURE__ */ r(A, { children: [
+      /* @__PURE__ */ r(R, { children: [
         /* @__PURE__ */ e(T, { children: "Runs per day (14d)" }),
         /* @__PURE__ */ e("div", { className: "sf-spark", style: { "--sf-c": "var(--accent)" }, children: s.map((n, f) => /* @__PURE__ */ e("i", { title: `${n.day}: ${n.completed} ok, ${n.failed} failed`, style: { height: `${Math.round(100 * (n.completed + n.failed) / p)}%`, background: n.failed ? `linear-gradient(to top, var(--danger) ${Math.round(100 * n.failed / Math.max(1, n.completed + n.failed))}%, var(--accent) 0)` : void 0 } }, f)) }),
         /* @__PURE__ */ r("div", { className: "sf-meta", style: { justifyContent: "space-between" }, children: [
@@ -698,7 +742,7 @@ function _e({ state: t }) {
           /* @__PURE__ */ e("span", { children: "today" })
         ] })
       ] }),
-      /* @__PURE__ */ r(A, { children: [
+      /* @__PURE__ */ r(R, { children: [
         /* @__PURE__ */ e(T, { children: "Credits per day (14d)" }),
         /* @__PURE__ */ e("div", { className: "sf-spark", style: { "--sf-c": "var(--warn)" }, children: s.map((n, f) => /* @__PURE__ */ e("i", { title: `${n.day}: ${n.credits.toFixed(1)} credits`, style: { height: `${Math.round(100 * n.credits / h)}%` } }, f)) }),
         /* @__PURE__ */ r("div", { className: "sf-meta", style: { justifyContent: "space-between" }, children: [
@@ -709,26 +753,26 @@ function _e({ state: t }) {
     ] })
   ] });
 }
-function M({ ok: t, unknown: a }) {
+function A({ ok: t, unknown: a }) {
   return /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: a ? "var(--muted)" : t ? "var(--ok)" : "var(--danger)", width: 10, height: 10 } });
 }
-function $e({ infra: t }) {
+function ze({ infra: t }) {
   return /* @__PURE__ */ r("div", { className: "sf-grid", children: [
-    /* @__PURE__ */ r(A, { children: [
+    /* @__PURE__ */ r(R, { children: [
       /* @__PURE__ */ e(T, { children: "Health" }),
       /* @__PURE__ */ r("dl", { className: "sf-kv", style: { gridTemplateColumns: "auto 1fr" }, children: [
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: t.runner_ok }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(A, { ok: t.runner_ok }) }),
         /* @__PURE__ */ r("dd", { children: [
           "Actions runner ",
           t.runner_ok ? "online" : "offline",
           t.runners.map((a) => ` · ${a.name}${a.busy ? " (busy)" : ""}`)
         ] }),
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: !!t.webhooks_enabled, unknown: t.webhooks_enabled == null }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(A, { ok: !!t.webhooks_enabled, unknown: t.webhooks_enabled == null }) }),
         /* @__PURE__ */ r("dd", { children: [
           "Inbound webhooks ",
           t.webhooks_enabled == null ? "unknown (switch not readable here)" : t.webhooks_enabled ? "enabled" : "DISABLED"
         ] }),
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: t.templates_ok }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(A, { ok: t.templates_ok }) }),
         /* @__PURE__ */ r("dd", { children: [
           "Agent templates ",
           Object.values(t.templates).filter(Boolean).length,
@@ -736,13 +780,13 @@ function $e({ infra: t }) {
           Object.keys(t.templates).length,
           " installed on this gateway"
         ] }),
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: t.workflow_failures_recent === 0 }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(A, { ok: t.workflow_failures_recent === 0 }) }),
         /* @__PURE__ */ r("dd", { children: [
           t.workflow_failures_recent,
           " failed workflow runs in the last 30 · last event ",
-          z(t.workflow_last_at)
+          $(t.workflow_last_at)
         ] }),
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(le, { size: 12 }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(ce, { size: 12 }) }),
         /* @__PURE__ */ r("dd", { children: [
           "Gateway host ",
           /* @__PURE__ */ e("span", { className: "sf-mono", children: t.gateway_host })
@@ -750,21 +794,21 @@ function $e({ infra: t }) {
       ] }),
       t.errors.length > 0 && /* @__PURE__ */ e("div", { className: "sf-warnbox", style: { marginTop: 12 }, children: t.errors.map((a, s) => /* @__PURE__ */ e("div", { children: a }, s)) })
     ] }),
-    /* @__PURE__ */ r(A, { children: [
+    /* @__PURE__ */ r(R, { children: [
       /* @__PURE__ */ e(T, { children: "Webhook sources" }),
       !t.sources_readable && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Source list not readable from the backend on this host. Check Settings → Webhooks." }),
       t.sources.map((a) => /* @__PURE__ */ r("div", { className: "sf-row", style: { padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12.5 }, children: [
-        /* @__PURE__ */ e(M, { ok: a.enabled }),
+        /* @__PURE__ */ e(A, { ok: a.enabled }),
         /* @__PURE__ */ e("span", { style: { flex: 1 }, children: a.label || a.id }),
         /* @__PURE__ */ e("span", { className: "sf-mono", style: { color: "var(--muted)" }, children: a.agent }),
         a.signed && /* @__PURE__ */ e("span", { className: "sf-chip", children: "signed" }),
-        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: z(a.last_used_at) })
+        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: $(a.last_used_at) })
       ] }, a.id))
     ] }),
-    /* @__PURE__ */ r(A, { children: [
+    /* @__PURE__ */ r(R, { children: [
       /* @__PURE__ */ e(T, { children: "Templates" }),
       Object.entries(t.templates).map(([a, s]) => /* @__PURE__ */ r("div", { className: "sf-row", style: { padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12.5 }, children: [
-        /* @__PURE__ */ e(M, { ok: s }),
+        /* @__PURE__ */ e(A, { ok: s }),
         /* @__PURE__ */ r("span", { className: "sf-mono", children: [
           a,
           ".json"
@@ -772,42 +816,42 @@ function $e({ infra: t }) {
         /* @__PURE__ */ e("span", { style: { marginLeft: "auto", color: "var(--muted)" }, children: s ? "~/.kiro/agents" : "run scripts/install-agent.sh" })
       ] }, a))
     ] }),
-    /* @__PURE__ */ r(A, { children: [
+    /* @__PURE__ */ r(R, { children: [
       /* @__PURE__ */ e(T, { children: "Recent workflow runs" }),
       t.workflow_recent.map((a) => /* @__PURE__ */ r("div", { className: "sf-row", style: { padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12.5 }, children: [
-        /* @__PURE__ */ e(M, { ok: a.conclusion === "success", unknown: !a.conclusion }),
+        /* @__PURE__ */ e(A, { ok: a.conclusion === "success", unknown: !a.conclusion }),
         /* @__PURE__ */ e("a", { className: "sf-link", href: a.url, target: "_blank", rel: "noreferrer", style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: a.title || a.name }),
         /* @__PURE__ */ e("span", { className: "sf-mono", style: { color: "var(--muted)" }, children: a.event }),
-        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: z(a.created_at) })
+        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: $(a.created_at) })
       ] }, a.id))
     ] })
   ] });
 }
-function Ae() {
-  const { state: t, error: a, loading: s, reload: p, api: h, showAll: n, setShowAll: f } = ge(), [i, d] = w("board"), [m, u] = w(null), [c, x] = w(null), k = (t == null ? void 0 : t.board.find((v) => v.issue === m)) ?? null, g = c ? (t == null ? void 0 : t.runs.find((v) => v.id === c.id || v.session_key && v.session_key === c.session_key)) ?? c : null;
+function Te() {
+  const { state: t, error: a, loading: s, reload: p, api: h, showAll: n, setShowAll: f } = ge(), [i, d] = y("board"), [m, u] = y(null), [c, x] = y(null), k = (t == null ? void 0 : t.board.find((v) => v.issue === m)) ?? null, g = c ? (t == null ? void 0 : t.runs.find((v) => v.id === c.id || v.session_key && v.session_key === c.session_key)) ?? c : null;
   return /* @__PURE__ */ r("div", { className: "sf-root", children: [
     /* @__PURE__ */ e("style", { children: ue }),
     /* @__PURE__ */ e(
-      ae,
+      ne,
       {
         title: "Software Factory",
-        subtitle: t ? `${t.repo} · ${t.stats.live_runs > 0 ? `${t.stats.live_runs} agent${t.stats.live_runs > 1 ? "s" : ""} running` : "idle"} · refreshed ${z(t.generated_at)}` : "Issue to merged PR, observed end to end"
+        subtitle: t ? `${t.repo} · ${t.stats.live_runs > 0 ? `${t.stats.live_runs} agent${t.stats.live_runs > 1 ? "s" : ""} running` : "idle"} · refreshed ${$(t.generated_at)}` : "Issue to merged PR, observed end to end"
       }
     ),
     /* @__PURE__ */ r("div", { className: "sf-body", children: [
       a && /* @__PURE__ */ r("div", { className: "sf-warnbox", children: [
-        /* @__PURE__ */ e(J, { size: 13, style: { verticalAlign: -2 } }),
+        /* @__PURE__ */ e(K, { size: 13, style: { verticalAlign: -2 } }),
         " ",
         a
       ] }),
       s && !t && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Reading GitHub and the gateway…" }),
-      t && /* @__PURE__ */ r($, { children: [
+      t && /* @__PURE__ */ r(z, { children: [
         /* @__PURE__ */ r("div", { className: "sf-stats", children: [
           /* @__PURE__ */ e(N, { label: "In flight", value: String(t.stats.in_flight), accent: !0 }),
           /* @__PURE__ */ e(N, { label: "Ready to merge", value: String(t.stats.ready) }),
           /* @__PURE__ */ e(N, { label: "Parked", value: String(t.stats.parked) }),
           /* @__PURE__ */ e(N, { label: "Shipped", value: String(t.stats.shipped) }),
-          /* @__PURE__ */ e(N, { label: "Median issue → ready", value: t.stats.median_cycle_s != null ? F(t.stats.median_cycle_s * 1e3) : "–" }),
+          /* @__PURE__ */ e(N, { label: "Median issue → ready", value: t.stats.median_cycle_s != null ? L(t.stats.median_cycle_s * 1e3) : "–" }),
           /* @__PURE__ */ e(N, { label: "Pass rate", value: t.stats.pass_rate != null ? `${t.stats.pass_rate}%` : "–" }),
           /* @__PURE__ */ e(N, { label: "Agent runs (7d)", value: `${t.stats.runs_week}` }),
           /* @__PURE__ */ e(N, { label: "Credits (7d)", value: t.stats.credits_week.toFixed(1) })
@@ -815,11 +859,11 @@ function Ae() {
         /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between", flexWrap: "wrap" }, children: [
           /* @__PURE__ */ e(ve, { value: i, onChange: d, items: [["board", "Board"], ["runs", "Agent runs"], ["agents", "Agents"], ["infra", "Infrastructure"]] }),
           /* @__PURE__ */ r("div", { className: "sf-row", style: { marginBottom: 16 }, children: [
-            /* @__PURE__ */ e("span", { className: "sf-row", style: { fontSize: 12, color: "var(--muted)" }, children: t.stats.live_runs > 0 ? /* @__PURE__ */ r($, { children: [
-              /* @__PURE__ */ e(se, { size: 13, className: "sf-pulse", style: { color: "var(--accent)" } }),
+            /* @__PURE__ */ e("span", { className: "sf-row", style: { fontSize: 12, color: "var(--muted)" }, children: t.stats.live_runs > 0 ? /* @__PURE__ */ r(z, { children: [
+              /* @__PURE__ */ e(ie, { size: 13, className: "sf-pulse", style: { color: "var(--accent)" } }),
               " live"
-            ] }) : /* @__PURE__ */ r($, { children: [
-              /* @__PURE__ */ e(ne, { size: 13 }),
+            ] }) : /* @__PURE__ */ r(z, { children: [
+              /* @__PURE__ */ e(le, { size: 13 }),
               " polling"
             ] }) }),
             /* @__PURE__ */ r("button", { className: "sf-btn", onClick: p, children: [
@@ -829,15 +873,15 @@ function Ae() {
           ] })
         ] }),
         i === "board" && /* @__PURE__ */ e(be, { state: t, onOpen: (v) => u(v.issue), showAll: n, onToggleAll: f }),
-        i === "runs" && /* @__PURE__ */ e(ye, { runs: t.runs, onWatch: x }),
+        i === "runs" && /* @__PURE__ */ e(we, { runs: t.runs, onWatch: x }),
         i === "agents" && /* @__PURE__ */ e(_e, { state: t }),
-        i === "infra" && /* @__PURE__ */ e($e, { infra: t.infra })
+        i === "infra" && /* @__PURE__ */ e(ze, { infra: t.infra })
       ] })
     ] }),
-    k && !c && /* @__PURE__ */ e(we, { it: k, runs: t.runs, onClose: () => u(null), onWatch: x }),
+    k && !c && /* @__PURE__ */ e(ye, { it: k, runs: t.runs, onClose: () => u(null), onWatch: x }),
     g && /* @__PURE__ */ e(Ne, { run: g, api: h, onClose: () => x(null) })
   ] });
 }
 export {
-  Ae as default
+  Te as default
 };
