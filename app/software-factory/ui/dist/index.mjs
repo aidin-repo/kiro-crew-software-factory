@@ -1,26 +1,26 @@
-import { jsxs as r, jsx as e, Fragment as T } from "react/jsx-runtime";
+import { jsxs as r, jsx as e, Fragment as $ } from "react/jsx-runtime";
 import { useAppApi as re } from "@kirocrew/app-sdk";
-import { PageHeader as ae, StatCard as k, CardTitle as C, Card as M } from "@kirocrew/app-sdk/ui";
+import { PageHeader as ae, StatCard as N, CardTitle as T, Card as A } from "@kirocrew/app-sdk/ui";
 import { AlertTriangle as J, Activity as se, CircleDot as ne, RefreshCw as oe, Zap as K, Eye as X, ExternalLink as P, CheckCircle2 as ie, Bot as Q, Server as le, Clock as de, GitPullRequest as ce, X as pe } from "lucide-react";
-import { useState as x, useRef as he, useCallback as me, useEffect as q, useMemo as O } from "react";
-const H = "/apps/software-factory/api", R = (t) => {
+import { useState as w, useRef as he, useCallback as me, useEffect as q, useMemo as O } from "react";
+const H = "/apps/software-factory/api", F = (t) => {
   if (t == null) return "–";
   const a = Math.round(t / 1e3);
   if (a < 60) return `${a}s`;
-  const n = Math.floor(a / 60);
-  return n < 60 ? `${n}m ${a % 60}s` : `${Math.floor(n / 60)}h ${n % 60}m`;
-}, _ = (t) => {
+  const s = Math.floor(a / 60);
+  return s < 60 ? `${s}m ${a % 60}s` : `${Math.floor(s / 60)}h ${s % 60}m`;
+}, z = (t) => {
   if (!t) return "–";
   const a = Math.max(0, Date.now() / 1e3 - t);
   return a < 60 ? `${Math.round(a)}s ago` : a < 3600 ? `${Math.round(a / 60)}m ago` : a < 86400 ? `${Math.round(a / 3600)}h ago` : `${Math.round(a / 86400)}d ago`;
-}, G = (t) => t ? new Date(t * 1e3).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "–", j = (t) => t.replace("delivery-", "").replace("github-", ""), fe = {
+}, G = (t) => t ? new Date(t * 1e3).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "–", B = (t) => t.replace("delivery-", "").replace("github-", ""), fe = {
   "delivery-planner": "var(--info)",
   "delivery-implementer": "var(--accent)",
   "delivery-reviewer": "var(--warn)",
   "delivery-scribe": "var(--ok)",
   "github-worker": "var(--muted-strong)",
   "pr-gate": "var(--text)"
-}, F = (t) => fe[t] ?? "var(--muted)", Y = {
+}, L = (t) => fe[t] ?? "var(--muted)", Y = {
   planning: "var(--info)",
   "needs-owner": "var(--warn)",
   implementing: "var(--accent)",
@@ -122,84 +122,84 @@ const H = "/apps/software-factory/api", R = (t) => {
 .sf-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
 `;
 function ge() {
-  const t = re(), [a, n] = x(null), [i, c] = x(null), [s, f] = x(!0), l = he(null), p = me(async (u = !1) => {
+  const t = re(), [a, s] = w(null), [p, h] = w(null), [n, f] = w(!0), [i, d] = w(!1), m = he(null), u = me(async (c = !1) => {
     try {
-      const h = await t.get(`${H}/state${u ? "?refresh=1" : ""}`);
-      n(h), c(null);
-    } catch (h) {
-      c(h instanceof Error ? h.message : String(h));
+      const x = [c ? "refresh=1" : "", i ? "limit=0" : ""].filter(Boolean).join("&"), k = await t.get(`${H}/state${x ? `?${x}` : ""}`);
+      s(k), h(null);
+    } catch (x) {
+      h(x instanceof Error ? x.message : String(x));
     } finally {
       f(!1);
     }
-  }, [t]);
+  }, [t, i]);
   return q(() => {
-    p();
-    const u = () => {
-      const h = ((a == null ? void 0 : a.stats.live_runs) ?? 0) > 0;
-      l.current = window.setTimeout(async () => {
-        await p(), u();
-      }, h ? 5e3 : 15e3);
+    u();
+    const c = () => {
+      const x = ((a == null ? void 0 : a.stats.live_runs) ?? 0) > 0;
+      m.current = window.setTimeout(async () => {
+        await u(), c();
+      }, x ? 5e3 : 15e3);
     };
-    return u(), () => {
-      l.current && window.clearTimeout(l.current);
+    return c(), () => {
+      m.current && window.clearTimeout(m.current);
     };
-  }, [p]), { state: a, error: i, loading: s, reload: () => p(!0), api: t };
+  }, [u]), { state: a, error: p, loading: n, reload: () => u(!0), api: t, showAll: i, setShowAll: d };
 }
-function A({ tone: t, children: a }) {
+function R({ tone: t, children: a }) {
   return /* @__PURE__ */ e("span", { className: "sf-pill", style: { background: `color-mix(in srgb, ${t} 16%, transparent)`, color: t }, children: a });
 }
 function U({ o: t, live: a }) {
-  const n = Z(t);
-  return /* @__PURE__ */ r(A, { tone: n, children: [
-    /* @__PURE__ */ e("span", { className: `sf-dot ${a ? "sf-pulse" : ""}`, style: { background: n, width: 7, height: 7 } }),
+  const s = Z(t);
+  return /* @__PURE__ */ r(R, { tone: s, children: [
+    /* @__PURE__ */ e("span", { className: `sf-dot ${a ? "sf-pulse" : ""}`, style: { background: s, width: 7, height: 7 } }),
     t
   ] });
 }
-function ve({ value: t, onChange: a, items: n }) {
-  return /* @__PURE__ */ e("div", { className: "sf-tabs", role: "tablist", children: n.map(([i, c]) => /* @__PURE__ */ e("button", { role: "tab", "aria-selected": t === i, "data-on": t === i, className: "sf-tab", onClick: () => a(i), children: c }, i)) });
+function ve({ value: t, onChange: a, items: s }) {
+  return /* @__PURE__ */ e("div", { className: "sf-tabs", role: "tablist", children: s.map(([p, h]) => /* @__PURE__ */ e("button", { role: "tab", "aria-selected": t === p, "data-on": t === p, className: "sf-tab", onClick: () => a(p), children: h }, p)) });
 }
-function ee({ title: t, sub: a, onClose: n, children: i, wide: c, actions: s }) {
+function ee({ title: t, sub: a, onClose: s, children: p, wide: h, actions: n }) {
   return q(() => {
-    const f = (l) => {
-      l.key === "Escape" && n();
+    const f = (i) => {
+      i.key === "Escape" && s();
     };
     return window.addEventListener("keydown", f), () => window.removeEventListener("keydown", f);
-  }, [n]), /* @__PURE__ */ r(T, { children: [
-    /* @__PURE__ */ e("div", { className: "sf-scrim", onClick: n }),
-    /* @__PURE__ */ r("aside", { className: "sf-drawer", "data-wide": !!c, role: "dialog", "aria-modal": "true", children: [
+  }, [s]), /* @__PURE__ */ r($, { children: [
+    /* @__PURE__ */ e("div", { className: "sf-scrim", onClick: s }),
+    /* @__PURE__ */ r("aside", { className: "sf-drawer", "data-wide": !!h, role: "dialog", "aria-modal": "true", children: [
       /* @__PURE__ */ r("div", { className: "sf-dhead", children: [
         /* @__PURE__ */ r("div", { style: { minWidth: 0, flex: 1 }, children: [
           /* @__PURE__ */ e("div", { style: { fontWeight: 600, fontSize: 15, color: "var(--text-strong)" }, children: t }),
           a && /* @__PURE__ */ e("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 3 }, children: a })
         ] }),
-        s,
-        /* @__PURE__ */ e("button", { className: "sf-x", onClick: n, "aria-label": "Close", style: { marginLeft: 4 }, children: /* @__PURE__ */ e(pe, { size: 16 }) })
+        n,
+        /* @__PURE__ */ e("button", { className: "sf-x", onClick: s, "aria-label": "Close", style: { marginLeft: 4 }, children: /* @__PURE__ */ e(pe, { size: 16 }) })
       ] }),
-      /* @__PURE__ */ e("div", { className: "sf-dbody", children: i })
+      /* @__PURE__ */ e("div", { className: "sf-dbody", children: p })
     ] })
   ] });
 }
 function xe({ it: t, onOpen: a }) {
-  var i;
-  const n = !!t.live_agent;
-  return /* @__PURE__ */ r("div", { className: "sf-card", "data-live": n, onClick: a, role: "button", tabIndex: 0, onKeyDown: (c) => c.key === "Enter" && a(), children: [
+  var p;
+  const s = !!t.live_agent;
+  return /* @__PURE__ */ r("div", { className: "sf-card", "data-live": s, onClick: a, role: "button", tabIndex: 0, onKeyDown: (h) => h.key === "Enter" && a(), children: [
     /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between", marginBottom: 4 }, children: [
       /* @__PURE__ */ r("span", { className: "sf-mono", style: { color: "var(--muted)" }, children: [
         "#",
         t.issue
       ] }),
-      n && /* @__PURE__ */ r(A, { tone: "var(--accent)", children: [
+      s && /* @__PURE__ */ r(R, { tone: "var(--accent)", children: [
         /* @__PURE__ */ e("span", { className: "sf-dot sf-pulse", style: { background: "var(--accent)", width: 7, height: 7 } }),
-        j(t.live_agent)
+        B(t.live_agent)
       ] }),
-      !n && ((i = t.pr) == null ? void 0 : i.checks) && /* @__PURE__ */ e("span", { className: "sf-dot", title: `CI ${t.pr.checks}`, style: { background: t.pr.checks === "passing" ? "var(--ok)" : t.pr.checks === "failing" ? "var(--danger)" : "var(--warn)" } })
+      !s && ((p = t.pr) == null ? void 0 : p.checks) && /* @__PURE__ */ e("span", { className: "sf-dot", title: `CI ${t.pr.checks}`, style: { background: t.pr.checks === "passing" ? "var(--ok)" : t.pr.checks === "failing" ? "var(--danger)" : "var(--warn)" } })
     ] }),
     /* @__PURE__ */ e("div", { className: "sf-cardtitle", children: t.title }),
     /* @__PURE__ */ r("div", { className: "sf-meta", children: [
-      /* @__PURE__ */ r("span", { title: "Time in stage", children: [
+      /* @__PURE__ */ r("span", { title: "Last activity", children: [
         /* @__PURE__ */ e(de, { size: 11, style: { verticalAlign: -1 } }),
         " ",
-        _(t.stage_since)
+        z(t.last_activity ?? t.stage_since)
       ] }),
       t.pr && /* @__PURE__ */ r("span", { children: [
         /* @__PURE__ */ e(ce, { size: 11, style: { verticalAlign: -1 } }),
@@ -216,42 +216,52 @@ function xe({ it: t, onOpen: a }) {
         t.credits.toFixed(1)
       ] })
     ] }),
-    t.hops.length > 0 && /* @__PURE__ */ e("div", { className: "sf-hops", title: t.hops.map((c) => `${j(c.agent)} ${c.outcome} ${R(c.duration_ms)}`).join(`
-`), children: t.hops.map((c) => /* @__PURE__ */ e("span", { className: `sf-hop ${c.live ? "sf-pulse" : ""}`, style: { background: F(c.agent), opacity: c.outcome === "completed" || c.live ? 0.9 : 0.35 } }, c.id)) })
+    t.hops.length > 0 && /* @__PURE__ */ e("div", { className: "sf-hops", title: t.hops.map((h) => `${B(h.agent)} ${h.outcome} ${F(h.duration_ms)}`).join(`
+`), children: t.hops.map((h) => /* @__PURE__ */ e("span", { className: `sf-hop ${h.live ? "sf-pulse" : ""}`, style: { background: L(h.agent), opacity: h.outcome === "completed" || h.live ? 0.9 : 0.35 } }, h.id)) })
   ] });
 }
-function be({ state: t, onOpen: a }) {
-  const n = t.stages.filter((i) => i.id !== "shipped" || t.stats.by_stage.shipped > 0);
-  return /* @__PURE__ */ e("div", { className: "sf-board", children: n.map((i) => {
-    const c = t.board.filter((f) => f.stage === i.id), s = i.id === "shipped" ? c.slice(0, 6) : c;
-    return /* @__PURE__ */ r("div", { className: "sf-col", children: [
-      /* @__PURE__ */ r("div", { className: "sf-colhead", children: [
-        /* @__PURE__ */ r("span", { className: "sf-row", children: [
-          /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: Y[i.id] } }),
-          i.label
-        ] }),
-        /* @__PURE__ */ e("span", { className: "sf-count", children: c.length })
+function be({ state: t, onOpen: a, showAll: s, onToggleAll: p }) {
+  const h = /* @__PURE__ */ new Set(["planning", "needs-owner", "implementing", "review", "ready"]), n = t.stages.filter((i) => h.has(i.id) || t.board.some((d) => d.stage === i.id)), f = t.board_total - t.board.length;
+  return /* @__PURE__ */ r($, { children: [
+    /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between", marginBottom: 10, fontSize: 12, color: "var(--muted)" }, children: [
+      /* @__PURE__ */ r("span", { children: [
+        s ? `All ${t.board_total} items` : `${t.board.length} most recently active${f > 0 ? ` · ${f} older hidden` : ""}`,
+        ", newest first in each column"
       ] }),
-      s.map((f) => /* @__PURE__ */ e(xe, { it: f, onOpen: () => a(f) }, f.issue)),
-      c.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", style: { padding: 10 }, children: "empty" }),
-      s.length < c.length && /* @__PURE__ */ r("div", { className: "sf-empty", style: { padding: 6 }, children: [
-        "+",
-        c.length - s.length,
-        " more"
+      /* @__PURE__ */ r("div", { className: "sf-views", role: "tablist", "aria-label": "Board scope", children: [
+        /* @__PURE__ */ r("button", { role: "tab", "aria-selected": !s, "data-on": !s, onClick: () => p(!1), children: [
+          "Recent ",
+          t.board_limit || 20
+        ] }),
+        /* @__PURE__ */ e("button", { role: "tab", "aria-selected": s, "data-on": s, onClick: () => p(!0), children: "All" })
       ] })
-    ] }, i.id);
-  }) });
+    ] }),
+    /* @__PURE__ */ e("div", { className: "sf-board", children: n.map((i) => {
+      const d = t.board.filter((m) => m.stage === i.id);
+      return /* @__PURE__ */ r("div", { className: "sf-col", children: [
+        /* @__PURE__ */ r("div", { className: "sf-colhead", children: [
+          /* @__PURE__ */ r("span", { className: "sf-row", children: [
+            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: Y[i.id] } }),
+            i.label
+          ] }),
+          /* @__PURE__ */ e("span", { className: "sf-count", children: d.length })
+        ] }),
+        d.map((m) => /* @__PURE__ */ e(xe, { it: m, onOpen: () => a(m) }, m.issue)),
+        d.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", style: { padding: 10 }, children: "empty" })
+      ] }, i.id);
+    }) })
+  ] });
 }
-function we({ it: t, runs: a, onClose: n, onWatch: i }) {
-  var s, f;
-  const c = t.hops.map((l) => ({ hop: l, run: a.find((p) => p.id === l.id) }));
-  return /* @__PURE__ */ r(ee, { onClose: n, title: /* @__PURE__ */ r("span", { children: [
+function we({ it: t, runs: a, onClose: s, onWatch: p }) {
+  var n, f;
+  const h = t.hops.map((i) => ({ hop: i, run: a.find((d) => d.id === i.id) }));
+  return /* @__PURE__ */ r(ee, { onClose: s, title: /* @__PURE__ */ r("span", { children: [
     "#",
     t.issue,
     " ",
     t.title
   ] }), sub: /* @__PURE__ */ r("span", { className: "sf-row", children: [
-    /* @__PURE__ */ e(A, { tone: Y[t.stage], children: t.stage }),
+    /* @__PURE__ */ e(R, { tone: Y[t.stage], children: t.stage }),
     /* @__PURE__ */ r("a", { className: "sf-link", href: t.url, target: "_blank", rel: "noreferrer", children: [
       "issue ",
       /* @__PURE__ */ e(P, { size: 11 })
@@ -273,55 +283,55 @@ function we({ it: t, runs: a, onClose: n, onWatch: i }) {
       /* @__PURE__ */ e("dt", { children: "Opened" }),
       /* @__PURE__ */ e("dd", { children: G(t.created_at) }),
       /* @__PURE__ */ e("dt", { children: "In stage since" }),
-      /* @__PURE__ */ e("dd", { children: _(t.stage_since) }),
+      /* @__PURE__ */ e("dd", { children: z(t.stage_since) }),
       /* @__PURE__ */ e("dt", { children: "Review rounds" }),
       /* @__PURE__ */ e("dd", { children: t.rounds }),
       /* @__PURE__ */ e("dt", { children: "Credits" }),
       /* @__PURE__ */ e("dd", { children: t.credits.toFixed(2) }),
       /* @__PURE__ */ e("dt", { children: "CI" }),
-      /* @__PURE__ */ e("dd", { children: ((s = t.pr) == null ? void 0 : s.checks) ?? "–" }),
+      /* @__PURE__ */ e("dd", { children: ((n = t.pr) == null ? void 0 : n.checks) ?? "–" }),
       /* @__PURE__ */ e("dt", { children: "Labels" }),
-      /* @__PURE__ */ e("dd", { style: { display: "flex", flexWrap: "wrap", gap: 4 }, children: [...t.labels, ...((f = t.pr) == null ? void 0 : f.labels) ?? []].filter((l) => l.startsWith("kiro-")).map((l) => /* @__PURE__ */ e("span", { className: "sf-chip", children: l }, l)) })
+      /* @__PURE__ */ e("dd", { style: { display: "flex", flexWrap: "wrap", gap: 4 }, children: [...t.labels, ...((f = t.pr) == null ? void 0 : f.labels) ?? []].filter((i) => i.startsWith("kiro-")).map((i) => /* @__PURE__ */ e("span", { className: "sf-chip", children: i }, i)) })
     ] }),
-    /* @__PURE__ */ e(C, { children: "Hops" }),
-    c.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "No agent run is linked to this issue on this gateway yet." }),
-    /* @__PURE__ */ e("div", { className: "sf-tl", children: c.map(({ hop: l, run: p }) => {
-      var u, h, m;
+    /* @__PURE__ */ e(T, { children: "Hops" }),
+    h.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "No agent run is linked to this issue on this gateway yet." }),
+    /* @__PURE__ */ e("div", { className: "sf-tl", children: h.map(({ hop: i, run: d }) => {
+      var m, u, c;
       return /* @__PURE__ */ r("div", { className: "sf-tli", children: [
-        /* @__PURE__ */ e("span", { className: `sf-dot ${l.live ? "sf-pulse" : ""}`, style: { background: F(l.agent) } }),
+        /* @__PURE__ */ e("span", { className: `sf-dot ${i.live ? "sf-pulse" : ""}`, style: { background: L(i.agent) } }),
         /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between" }, children: [
           /* @__PURE__ */ r("div", { children: [
-            /* @__PURE__ */ e("strong", { style: { color: "var(--text-strong)", fontSize: 13 }, children: j(l.agent) }),
-            /* @__PURE__ */ e("span", { style: { color: "var(--muted)", fontSize: 12, marginLeft: 8 }, children: l.kind })
+            /* @__PURE__ */ e("strong", { style: { color: "var(--text-strong)", fontSize: 13 }, children: B(i.agent) }),
+            /* @__PURE__ */ e("span", { style: { color: "var(--muted)", fontSize: 12, marginLeft: 8 }, children: i.kind })
           ] }),
-          /* @__PURE__ */ e(U, { o: l.outcome, live: l.live })
+          /* @__PURE__ */ e(U, { o: i.outcome, live: i.live })
         ] }),
         /* @__PURE__ */ r("div", { className: "sf-meta", children: [
-          /* @__PURE__ */ e("span", { children: G(l.started_at) }),
-          /* @__PURE__ */ e("span", { children: R(l.duration_ms) }),
-          l.credits != null && /* @__PURE__ */ r("span", { children: [
+          /* @__PURE__ */ e("span", { children: G(i.started_at) }),
+          /* @__PURE__ */ e("span", { children: F(i.duration_ms) }),
+          i.credits != null && /* @__PURE__ */ r("span", { children: [
             /* @__PURE__ */ e(K, { size: 11, style: { verticalAlign: -1 } }),
             " ",
-            l.credits.toFixed(2)
+            i.credits.toFixed(2)
           ] }),
-          ((u = p == null ? void 0 : p.session) == null ? void 0 : u.model) && /* @__PURE__ */ e("span", { children: p.session.model }),
-          ((h = p == null ? void 0 : p.session) == null ? void 0 : h.tool_calls) != null && /* @__PURE__ */ r("span", { children: [
-            p.session.tool_calls,
+          ((m = d == null ? void 0 : d.session) == null ? void 0 : m.model) && /* @__PURE__ */ e("span", { children: d.session.model }),
+          ((u = d == null ? void 0 : d.session) == null ? void 0 : u.tool_calls) != null && /* @__PURE__ */ r("span", { children: [
+            d.session.tool_calls,
             " tool calls"
           ] }),
-          (p == null ? void 0 : p.session_key) && /* @__PURE__ */ r("button", { className: "sf-btn", style: { padding: "2px 8px" }, onClick: () => i(p), children: [
+          (d == null ? void 0 : d.session_key) && /* @__PURE__ */ r("button", { className: "sf-btn", style: { padding: "2px 8px" }, onClick: () => p(d), children: [
             /* @__PURE__ */ e(X, { size: 12 }),
             " ",
-            l.live ? "watch live" : "steps"
+            i.live ? "watch live" : "steps"
           ] })
         ] }),
-        ((m = p == null ? void 0 : p.session) == null ? void 0 : m.last_text) && /* @__PURE__ */ e("div", { className: "sf-text", style: { marginTop: 8, maxHeight: 90, overflow: "hidden" }, children: p.session.last_text })
-      ] }, l.id);
+        ((c = d == null ? void 0 : d.session) == null ? void 0 : c.last_text) && /* @__PURE__ */ e("div", { className: "sf-text", style: { marginTop: 8, maxHeight: 90, overflow: "hidden" }, children: d.session.last_text })
+      ] }, i.id);
     }) })
   ] });
 }
 function ye({ runs: t, onWatch: a }) {
-  return /* @__PURE__ */ r(M, { children: [
+  return /* @__PURE__ */ r(A, { children: [
     /* @__PURE__ */ r("table", { className: "sf-table", children: [
       /* @__PURE__ */ e("thead", { children: /* @__PURE__ */ r("tr", { children: [
         /* @__PURE__ */ e("th", { children: "When" }),
@@ -335,36 +345,36 @@ function ye({ runs: t, onWatch: a }) {
         /* @__PURE__ */ e("th", { children: "Credits" }),
         /* @__PURE__ */ e("th", {})
       ] }) }),
-      /* @__PURE__ */ e("tbody", { children: t.map((n) => {
-        var i, c, s, f, l, p;
+      /* @__PURE__ */ e("tbody", { children: t.map((s) => {
+        var p, h, n, f, i, d;
         return /* @__PURE__ */ r("tr", { children: [
-          /* @__PURE__ */ e("td", { title: G(n.started_at), children: _(n.started_at) }),
+          /* @__PURE__ */ e("td", { title: G(s.started_at), children: z(s.started_at) }),
           /* @__PURE__ */ e("td", { children: /* @__PURE__ */ r("span", { className: "sf-row", children: [
-            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: F(n.agent) } }),
-            j(n.agent)
+            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: L(s.agent) } }),
+            B(s.agent)
           ] }) }),
-          /* @__PURE__ */ e("td", { className: "sf-mono", children: n.kind }),
+          /* @__PURE__ */ e("td", { className: "sf-mono", children: s.kind }),
           /* @__PURE__ */ r("td", { children: [
-            (i = n.session) != null && i.issue ? `#${n.session.issue}` : "",
-            (c = n.session) != null && c.pr ? ` PR ${n.session.pr}` : ""
+            (p = s.session) != null && p.issue ? `#${s.session.issue}` : "",
+            (h = s.session) != null && h.pr ? ` PR ${s.session.pr}` : ""
           ] }),
-          /* @__PURE__ */ e("td", { children: /* @__PURE__ */ e(U, { o: n.outcome, live: n.live }) }),
-          /* @__PURE__ */ e("td", { children: R(n.duration_ms) }),
-          /* @__PURE__ */ e("td", { className: "sf-mono", children: ((s = n.session) == null ? void 0 : s.model) ?? "–" }),
-          /* @__PURE__ */ e("td", { children: ((f = n.session) == null ? void 0 : f.tool_calls) ?? "–" }),
-          /* @__PURE__ */ e("td", { children: (l = n.session) != null && l.credits ? n.session.credits.toFixed(2) : "–" }),
-          /* @__PURE__ */ e("td", { children: n.session_key && ((p = n.session) == null ? void 0 : p.found) && /* @__PURE__ */ r("button", { className: "sf-btn", onClick: () => a(n), children: [
+          /* @__PURE__ */ e("td", { children: /* @__PURE__ */ e(U, { o: s.outcome, live: s.live }) }),
+          /* @__PURE__ */ e("td", { children: F(s.duration_ms) }),
+          /* @__PURE__ */ e("td", { className: "sf-mono", children: ((n = s.session) == null ? void 0 : n.model) ?? "–" }),
+          /* @__PURE__ */ e("td", { children: ((f = s.session) == null ? void 0 : f.tool_calls) ?? "–" }),
+          /* @__PURE__ */ e("td", { children: (i = s.session) != null && i.credits ? s.session.credits.toFixed(2) : "–" }),
+          /* @__PURE__ */ e("td", { children: s.session_key && ((d = s.session) == null ? void 0 : d.found) && /* @__PURE__ */ r("button", { className: "sf-btn", onClick: () => a(s), children: [
             /* @__PURE__ */ e(X, { size: 12 }),
             " ",
-            n.live ? "watch" : "steps"
+            s.live ? "watch" : "steps"
           ] }) })
-        ] }, n.id);
+        ] }, s.id);
       }) })
     ] }),
     t.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "No webhook runs recorded for this repository on this gateway." })
   ] });
 }
-const N = (t) => t < 1e3 ? `${Math.round(t)}ms` : t < 6e4 ? `${(t / 1e3).toFixed(t < 1e4 ? 2 : 1)}s` : `${Math.floor(t / 6e4)}m ${Math.round(t % 6e4 / 1e3)}s`, V = (t) => {
+const _ = (t) => t < 1e3 ? `${Math.round(t)}ms` : t < 6e4 ? `${(t / 1e3).toFixed(t < 1e4 ? 2 : 1)}s` : `${Math.floor(t / 6e4)}m ${Math.round(t % 6e4 / 1e3)}s`, V = (t) => {
   if (t.status === "error" || t.status === "denied") return "var(--danger)";
   if (t.kind === "run") return "var(--text)";
   if (t.kind === "turn") return "var(--muted-strong)";
@@ -373,26 +383,26 @@ const N = (t) => t < 1e3 ? `${Math.round(t)}ms` : t < 6e4 ? `${(t / 1e3).toFixed
   return a === "read" || a === "read_files" || a === "search" ? "var(--muted)" : a === "edit" || a === "write" ? "var(--warn)" : "var(--accent)";
 }, W = (t) => t.kind === "tool" ? t.meta.title && t.meta.title !== t.name ? t.meta.title : t.name : t.kind === "model" ? `model · ${t.output ? "said" : "thought"}` : t.name;
 function ke({ spans: t, live: a }) {
-  const [n, i] = x(/* @__PURE__ */ new Set()), [c, s] = x(null), [f, l] = x(""), p = t[0], u = p.start, h = Math.max(1e-3, p.end - p.start), m = O(() => {
+  const [s, p] = w(/* @__PURE__ */ new Set()), [h, n] = w(null), [f, i] = w(""), d = t[0], m = d.start, u = Math.max(1e-3, d.end - d.start), c = O(() => {
     const o = /* @__PURE__ */ new Map();
-    for (const v of t) {
-      const w = o.get(v.parent) ?? [];
-      w.push(v), o.set(v.parent, w);
+    for (const b of t) {
+      const y = o.get(b.parent) ?? [];
+      y.push(b), o.set(b.parent, y);
     }
     return o;
-  }, [t]), I = O(() => {
-    const o = [], v = f.trim().toLowerCase(), w = (z) => !v || `${W(z)} ${z.input} ${z.name}`.toLowerCase().includes(v), E = (z, D) => {
-      var B;
-      for (const $ of m.get(z) ?? []) {
-        const te = ((B = m.get($.id)) == null ? void 0 : B.length) ?? 0;
-        (w($) || $.kind !== "tool" && $.kind !== "model") && o.push({ sp: $, depth: D, kids: te }), n.has($.id) || E($.id, D + 1);
+  }, [t]), x = O(() => {
+    const o = [], b = f.trim().toLowerCase(), y = (S) => !b || `${W(S)} ${S.input} ${S.name}`.toLowerCase().includes(b), D = (S, I) => {
+      var E;
+      for (const C of c.get(S) ?? []) {
+        const te = ((E = c.get(C.id)) == null ? void 0 : E.length) ?? 0;
+        (y(C) || C.kind !== "tool" && C.kind !== "model") && o.push({ sp: C, depth: I, kids: te }), s.has(C.id) || D(C.id, I + 1);
       }
     };
-    return E(null, 0), o;
-  }, [m, n, f]), b = (o) => i((v) => {
-    const w = new Set(v);
-    return w.has(o) ? w.delete(o) : w.add(o), w;
-  }), g = t.filter((o) => o.kind === "tool").reduce((o, v) => o + (v.end - v.start) * 1e3, 0), y = t.filter((o) => o.kind === "model").reduce((o, v) => o + (v.end - v.start) * 1e3, 0), L = t.filter((o) => o.status === "error" || o.status === "denied").length, d = t.find((o) => o.id === c) ?? null;
+    return D(null, 0), o;
+  }, [c, s, f]), k = (o) => p((b) => {
+    const y = new Set(b);
+    return y.has(o) ? y.delete(o) : y.add(o), y;
+  }), g = t.filter((o) => o.kind === "tool").reduce((o, b) => o + (b.end - b.start) * 1e3, 0), v = t.filter((o) => o.kind === "model").reduce((o, b) => o + (b.end - b.start) * 1e3, 0), j = t.filter((o) => o.status === "error" || o.status === "denied").length, l = t.find((o) => o.id === h) ?? null;
   return /* @__PURE__ */ r("div", { children: [
     /* @__PURE__ */ r("div", { className: "sf-tr-sum", children: [
       /* @__PURE__ */ r("span", { children: [
@@ -400,53 +410,53 @@ function ke({ spans: t, live: a }) {
         "spans"
       ] }),
       /* @__PURE__ */ r("span", { children: [
-        /* @__PURE__ */ e("b", { children: N(h * 1e3) }),
+        /* @__PURE__ */ e("b", { children: _(u * 1e3) }),
         "duration"
       ] }),
       /* @__PURE__ */ r("span", { children: [
-        /* @__PURE__ */ e("b", { children: p.meta.tools ?? 0 }),
+        /* @__PURE__ */ e("b", { children: d.meta.tools ?? 0 }),
         "tool calls · ",
-        N(g),
+        _(g),
         " (",
-        Math.round(100 * g / (h * 1e3)),
+        Math.round(100 * g / (u * 1e3)),
         "%)"
       ] }),
       /* @__PURE__ */ r("span", { children: [
-        /* @__PURE__ */ e("b", { children: p.meta.model_spans ?? 0 }),
+        /* @__PURE__ */ e("b", { children: d.meta.model_spans ?? 0 }),
         "model spans · ",
-        N(y),
+        _(v),
         " (",
-        Math.round(100 * y / (h * 1e3)),
+        Math.round(100 * v / (u * 1e3)),
         "%)"
       ] }),
       /* @__PURE__ */ r("span", { children: [
-        /* @__PURE__ */ e("b", { children: (p.meta.credits ?? 0).toFixed(2) }),
+        /* @__PURE__ */ e("b", { children: (d.meta.credits ?? 0).toFixed(2) }),
         "credits"
       ] }),
-      L > 0 && /* @__PURE__ */ r("span", { style: { color: "var(--danger)" }, children: [
-        /* @__PURE__ */ e("b", { style: { color: "var(--danger)" }, children: L }),
+      j > 0 && /* @__PURE__ */ r("span", { style: { color: "var(--danger)" }, children: [
+        /* @__PURE__ */ e("b", { style: { color: "var(--danger)" }, children: j }),
         "refused or failed"
       ] }),
       a && /* @__PURE__ */ e("span", { style: { color: "var(--accent)" }, children: "live" })
     ] }),
     /* @__PURE__ */ r("div", { className: "sf-tr-tools", children: [
-      /* @__PURE__ */ e("input", { value: f, onChange: (o) => l(o.target.value), placeholder: "Filter spans by name, command or path…", "aria-label": "Filter spans" }),
-      /* @__PURE__ */ e("button", { className: "sf-btn", onClick: () => i(/* @__PURE__ */ new Set()), children: "Expand all" }),
-      /* @__PURE__ */ e("button", { className: "sf-btn", onClick: () => i(new Set(t.filter((o) => o.kind === "turn").map((o) => o.id))), children: "Turns only" })
+      /* @__PURE__ */ e("input", { value: f, onChange: (o) => i(o.target.value), placeholder: "Filter spans by name, command or path…", "aria-label": "Filter spans" }),
+      /* @__PURE__ */ e("button", { className: "sf-btn", onClick: () => p(/* @__PURE__ */ new Set()), children: "Expand all" }),
+      /* @__PURE__ */ e("button", { className: "sf-btn", onClick: () => p(new Set(t.filter((o) => o.kind === "turn").map((o) => o.id))), children: "Turns only" })
     ] }),
     /* @__PURE__ */ r("div", { className: "sf-tr", role: "tree", children: [
       /* @__PURE__ */ r("div", { className: "sf-tr-head", children: [
         /* @__PURE__ */ e("div", { children: "Span" }),
-        /* @__PURE__ */ e("div", { className: "sf-tr-axis", children: [0, 0.25, 0.5, 0.75, 1].map((o) => /* @__PURE__ */ e("span", { style: { left: `calc(${o * 100}% - ${o === 1 ? 24 : o === 0 ? -6 : 0}px)` }, children: N(o * h * 1e3) }, o)) })
+        /* @__PURE__ */ e("div", { className: "sf-tr-axis", children: [0, 0.25, 0.5, 0.75, 1].map((o) => /* @__PURE__ */ e("span", { style: { left: `calc(${o * 100}% - ${o === 1 ? 24 : o === 0 ? -6 : 0}px)` }, children: _(o * u * 1e3) }, o)) })
       ] }),
-      I.map(({ sp: o, depth: v, kids: w }) => {
-        const E = (o.start - u) / h * 100, z = Math.max(0.3, (o.end - o.start) / h * 100), D = V(o);
-        return /* @__PURE__ */ r("div", { className: "sf-tr-row", role: "treeitem", "aria-selected": c === o.id, "data-sel": c === o.id, onClick: () => s(o.id === c ? null : o.id), children: [
-          /* @__PURE__ */ r("div", { style: { paddingLeft: 10 + v * 16 }, children: [
-            /* @__PURE__ */ e("span", { className: "sf-caret", onClick: (B) => {
-              B.stopPropagation(), w && b(o.id);
-            }, "aria-hidden": "true", children: w ? n.has(o.id) ? "▸" : "▾" : "" }),
-            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: D, width: 8, height: 8, flex: "none" } }),
+      x.map(({ sp: o, depth: b, kids: y }) => {
+        const D = (o.start - m) / u * 100, S = Math.max(0.3, (o.end - o.start) / u * 100), I = V(o);
+        return /* @__PURE__ */ r("div", { className: "sf-tr-row", role: "treeitem", "aria-selected": h === o.id, "data-sel": h === o.id, onClick: () => n(o.id === h ? null : o.id), children: [
+          /* @__PURE__ */ r("div", { style: { paddingLeft: 10 + b * 16 }, children: [
+            /* @__PURE__ */ e("span", { className: "sf-caret", onClick: (E) => {
+              E.stopPropagation(), y && k(o.id);
+            }, "aria-hidden": "true", children: y ? s.has(o.id) ? "▸" : "▾" : "" }),
+            /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: I, width: 8, height: 8, flex: "none" } }),
             /* @__PURE__ */ e("span", { className: "sf-tr-name", title: W(o), children: W(o) }),
             o.kind === "tool" && o.input && /* @__PURE__ */ e("span", { className: "sf-tr-sub", title: o.input, children: o.input }),
             o.kind === "turn" && o.meta.credits != null && /* @__PURE__ */ r("span", { className: "sf-chip", children: [
@@ -455,21 +465,21 @@ function ke({ spans: t, live: a }) {
             ] })
           ] }),
           /* @__PURE__ */ r("div", { children: [
-            /* @__PURE__ */ e("div", { className: "sf-tr-track", children: /* @__PURE__ */ e("span", { className: "sf-tr-bar", "data-status": o.status, style: { left: `${E}%`, width: `${z}%`, background: D } }) }),
-            /* @__PURE__ */ e("span", { className: "sf-tr-dur", children: N((o.end - o.start) * 1e3) })
+            /* @__PURE__ */ e("div", { className: "sf-tr-track", children: /* @__PURE__ */ e("span", { className: "sf-tr-bar", "data-status": o.status, style: { left: `${D}%`, width: `${S}%`, background: I } }) }),
+            /* @__PURE__ */ e("span", { className: "sf-tr-dur", children: _((o.end - o.start) * 1e3) })
           ] })
         ] }, o.id);
       })
     ] }),
-    d && /* @__PURE__ */ r("div", { className: "sf-tr-detail", children: [
+    l && /* @__PURE__ */ r("div", { className: "sf-tr-detail", children: [
       /* @__PURE__ */ r("div", { className: "sf-row", style: { marginBottom: 6 }, children: [
-        /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: V(d), width: 9, height: 9 } }),
-        /* @__PURE__ */ e("b", { style: { color: "var(--text-strong)" }, children: W(d) }),
-        /* @__PURE__ */ e(A, { tone: d.status === "ok" ? "var(--ok)" : d.status === "running" ? "var(--accent)" : d.status === "warn" ? "var(--warn)" : "var(--danger)", children: d.status }),
+        /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: V(l), width: 9, height: 9 } }),
+        /* @__PURE__ */ e("b", { style: { color: "var(--text-strong)" }, children: W(l) }),
+        /* @__PURE__ */ e(R, { tone: l.status === "ok" ? "var(--ok)" : l.status === "running" ? "var(--accent)" : l.status === "warn" ? "var(--warn)" : "var(--danger)", children: l.status }),
         /* @__PURE__ */ r("span", { style: { color: "var(--muted)", fontSize: 12 }, children: [
-          d.kind,
-          d.meta.tool ? ` · ${d.meta.tool}` : "",
-          d.meta.kind ? ` · ${d.meta.kind}` : ""
+          l.kind,
+          l.meta.tool ? ` · ${l.meta.tool}` : "",
+          l.meta.kind ? ` · ${l.meta.kind}` : ""
         ] })
       ] }),
       /* @__PURE__ */ r("div", { className: "sf-tr-kv", children: [
@@ -477,105 +487,105 @@ function ke({ spans: t, live: a }) {
           "start ",
           /* @__PURE__ */ r("b", { children: [
             "+",
-            N((d.start - u) * 1e3)
+            _((l.start - m) * 1e3)
           ] })
         ] }),
         /* @__PURE__ */ r("span", { children: [
           "duration ",
-          /* @__PURE__ */ e("b", { children: N((d.end - d.start) * 1e3) })
+          /* @__PURE__ */ e("b", { children: _((l.end - l.start) * 1e3) })
         ] }),
-        d.meta.approval_ms != null && /* @__PURE__ */ r("span", { children: [
+        l.meta.approval_ms != null && /* @__PURE__ */ r("span", { children: [
           "approval wait ",
-          /* @__PURE__ */ e("b", { children: N(d.meta.approval_ms) })
+          /* @__PURE__ */ e("b", { children: _(l.meta.approval_ms) })
         ] }),
-        d.meta.credits != null && d.kind !== "run" && /* @__PURE__ */ r("span", { children: [
+        l.meta.credits != null && l.kind !== "run" && /* @__PURE__ */ r("span", { children: [
           "credits ",
-          /* @__PURE__ */ e("b", { children: d.meta.credits.toFixed(3) })
+          /* @__PURE__ */ e("b", { children: l.meta.credits.toFixed(3) })
         ] }),
-        d.meta.model_calls != null && /* @__PURE__ */ r("span", { children: [
+        l.meta.model_calls != null && /* @__PURE__ */ r("span", { children: [
           "model calls ",
-          /* @__PURE__ */ e("b", { children: d.meta.model_calls })
+          /* @__PURE__ */ e("b", { children: l.meta.model_calls })
         ] }),
-        d.meta.context_pct != null && /* @__PURE__ */ r("span", { children: [
+        l.meta.context_pct != null && /* @__PURE__ */ r("span", { children: [
           "context used ",
           /* @__PURE__ */ r("b", { children: [
-            d.meta.context_pct.toFixed(1),
+            l.meta.context_pct.toFixed(1),
             "%"
           ] })
         ] }),
-        d.meta.model && /* @__PURE__ */ r("span", { children: [
+        l.meta.model && /* @__PURE__ */ r("span", { children: [
           "model ",
-          /* @__PURE__ */ e("b", { children: d.meta.model })
+          /* @__PURE__ */ e("b", { children: l.meta.model })
         ] })
       ] }),
-      d.input && /* @__PURE__ */ r(T, { children: [
-        /* @__PURE__ */ e("div", { className: "sf-label", children: d.kind === "turn" ? "prompt" : "input" }),
-        /* @__PURE__ */ e("pre", { className: "sf-pre", children: d.input })
+      l.input && /* @__PURE__ */ r($, { children: [
+        /* @__PURE__ */ e("div", { className: "sf-label", children: l.kind === "turn" ? "prompt" : "input" }),
+        /* @__PURE__ */ e("pre", { className: "sf-pre", children: l.input })
       ] }),
-      d.output && /* @__PURE__ */ r(T, { children: [
-        /* @__PURE__ */ e("div", { className: "sf-label", children: d.kind === "turn" ? "stop reason" : "output" }),
-        /* @__PURE__ */ e("pre", { className: "sf-pre", children: d.output })
+      l.output && /* @__PURE__ */ r($, { children: [
+        /* @__PURE__ */ e("div", { className: "sf-label", children: l.kind === "turn" ? "stop reason" : "output" }),
+        /* @__PURE__ */ e("pre", { className: "sf-pre", children: l.output })
       ] }),
-      !d.input && !d.output && /* @__PURE__ */ e("div", { className: "sf-empty", style: { padding: 8 }, children: "No input or output recorded for this span." })
+      !l.input && !l.output && /* @__PURE__ */ e("div", { className: "sf-empty", style: { padding: 8 }, children: "No input or output recorded for this span." })
     ] })
   ] });
 }
-function Ne({ run: t, api: a, onClose: n }) {
-  var b;
-  const [i, c] = x("steps"), [s, f] = x(null), [l, p] = x(null), [u, h] = x(null);
+function Ne({ run: t, api: a, onClose: s }) {
+  var k;
+  const [p, h] = w("steps"), [n, f] = w(null), [i, d] = w(null), [m, u] = w(null);
   q(() => {
     let g = !0;
-    const y = async () => {
+    const v = async () => {
       try {
-        if (i === "steps") {
-          const d = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/steps`);
+        if (p === "steps") {
+          const l = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/steps`);
           if (!g) return;
-          d.error ? h(d.error) : (f(d.steps), h(null));
+          l.error ? u(l.error) : (f(l.steps), u(null));
         } else {
-          const d = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/trace`);
+          const l = await a.get(`${H}/runs/${encodeURIComponent(t.id)}/trace`);
           if (!g) return;
-          d.error ? h(d.error) : (p(d.found ? d.spans : []), h(null));
+          l.error ? u(l.error) : (d(l.found ? l.spans : []), u(null));
         }
-      } catch (d) {
-        g && h(String(d));
+      } catch (l) {
+        g && u(String(l));
       }
     };
-    y();
-    const L = t.live ? window.setInterval(y, 4e3) : null;
+    v();
+    const j = t.live ? window.setInterval(v, 4e3) : null;
     return () => {
-      g = !1, L && window.clearInterval(L);
+      g = !1, j && window.clearInterval(j);
     };
-  }, [a, t.id, t.live, i]);
-  const m = t.session, I = /* @__PURE__ */ e("div", { className: "sf-views", role: "tablist", "aria-label": "Transcript view", children: ["steps", "trace", "json"].map((g) => /* @__PURE__ */ e("button", { role: "tab", "aria-selected": i === g, "data-on": i === g, onClick: () => c(g), children: g === "steps" ? "Steps" : g === "trace" ? "Trace" : "JSON" }, g)) });
+  }, [a, t.id, t.live, p]);
+  const c = t.session, x = /* @__PURE__ */ e("div", { className: "sf-views", role: "tablist", "aria-label": "Transcript view", children: ["steps", "trace", "json"].map((g) => /* @__PURE__ */ e("button", { role: "tab", "aria-selected": p === g, "data-on": p === g, onClick: () => h(g), children: g === "steps" ? "Steps" : g === "trace" ? "Trace" : "JSON" }, g)) });
   return /* @__PURE__ */ r(
     ee,
     {
-      onClose: n,
-      wide: i !== "steps",
-      actions: I,
+      onClose: s,
+      wide: p !== "steps",
+      actions: x,
       title: /* @__PURE__ */ r("span", { className: "sf-row", children: [
-        /* @__PURE__ */ e(Q, { size: 16, style: { color: F(t.agent) } }),
-        j(t.agent),
+        /* @__PURE__ */ e(Q, { size: 16, style: { color: L(t.agent) } }),
+        B(t.agent),
         " ",
         /* @__PURE__ */ e("span", { style: { color: "var(--muted)", fontWeight: 400 }, children: t.kind }),
         " ",
         /* @__PURE__ */ e(U, { o: t.outcome, live: t.live })
       ] }),
       sub: /* @__PURE__ */ r("span", { children: [
-        (m == null ? void 0 : m.title) ?? "",
+        (c == null ? void 0 : c.title) ?? "",
         " · ",
-        (m == null ? void 0 : m.model) ?? "",
+        (c == null ? void 0 : c.model) ?? "",
         " ",
-        m != null && m.effort ? `(${m.effort})` : "",
+        c != null && c.effort ? `(${c.effort})` : "",
         " · ",
-        R(t.duration_ms),
+        F(t.duration_ms),
         " · ",
-        (m == null ? void 0 : m.tool_calls) ?? 0,
+        (c == null ? void 0 : c.tool_calls) ?? 0,
         " tool calls · ",
-        ((b = m == null ? void 0 : m.credits) == null ? void 0 : b.toFixed(2)) ?? "0",
+        ((k = c == null ? void 0 : c.credits) == null ? void 0 : k.toFixed(2)) ?? "0",
         " credits",
-        m != null && m.issue ? ` · #${m.issue}` : "",
-        m != null && m.pr ? ` · PR ${m.pr}` : ""
+        c != null && c.issue ? ` · #${c.issue}` : "",
+        c != null && c.pr ? ` · PR ${c.pr}` : ""
       ] }),
       children: [
         t.detail && /* @__PURE__ */ r("div", { className: "sf-warnbox", children: [
@@ -583,14 +593,14 @@ function Ne({ run: t, api: a, onClose: n }) {
           " ",
           t.detail
         ] }),
-        u && /* @__PURE__ */ e("div", { className: "sf-empty", children: u }),
-        i !== "steps" && !l && !u && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Building trace…" }),
-        i !== "steps" && l && l.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Transcript not available on this gateway (the run happened on another machine)." }),
-        i === "trace" && l && l.length > 0 && /* @__PURE__ */ e(ke, { spans: l, live: t.live }),
-        i === "json" && l && l.length > 0 && /* @__PURE__ */ e("pre", { className: "sf-pre", style: { maxHeight: "none" }, children: JSON.stringify(l, null, 2) }),
-        i === "steps" && !s && !u && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Loading transcript…" }),
-        i === "steps" && s && s.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Transcript not available on this gateway (the run happened on another machine)." }),
-        i === "steps" && (s == null ? void 0 : s.map((g, y) => g.kind === "tool" ? /* @__PURE__ */ r("div", { className: "sf-step", children: [
+        m && /* @__PURE__ */ e("div", { className: "sf-empty", children: m }),
+        p !== "steps" && !i && !m && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Building trace…" }),
+        p !== "steps" && i && i.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Transcript not available on this gateway (the run happened on another machine)." }),
+        p === "trace" && i && i.length > 0 && /* @__PURE__ */ e(ke, { spans: i, live: t.live }),
+        p === "json" && i && i.length > 0 && /* @__PURE__ */ e("pre", { className: "sf-pre", style: { maxHeight: "none" }, children: JSON.stringify(i, null, 2) }),
+        p === "steps" && !n && !m && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Loading transcript…" }),
+        p === "steps" && n && n.length === 0 && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Transcript not available on this gateway (the run happened on another machine)." }),
+        p === "steps" && (n == null ? void 0 : n.map((g, v) => g.kind === "tool" ? /* @__PURE__ */ r("div", { className: "sf-step", children: [
           /* @__PURE__ */ e("span", { className: "sf-dot", style: { marginTop: 5, background: g.ok === !1 ? "var(--danger)" : g.ok ? "var(--ok)" : "var(--muted)" } }),
           /* @__PURE__ */ r("div", { style: { minWidth: 0, flex: 1 }, children: [
             /* @__PURE__ */ r("div", { style: { color: "var(--text-strong)" }, children: [
@@ -601,124 +611,124 @@ function Ne({ run: t, api: a, onClose: n }) {
             g.detail && /* @__PURE__ */ e("div", { className: "sf-mono", children: g.detail })
           ] }),
           /* @__PURE__ */ e("span", { style: { color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }, children: g.t ? new Date(g.t).toLocaleTimeString() : "" })
-        ] }, y) : g.kind === "text" ? /* @__PURE__ */ r("div", { className: "sf-step", children: [
-          /* @__PURE__ */ e("span", { className: "sf-dot", style: { marginTop: 5, background: F(t.agent) } }),
+        ] }, v) : g.kind === "text" ? /* @__PURE__ */ r("div", { className: "sf-step", children: [
+          /* @__PURE__ */ e("span", { className: "sf-dot", style: { marginTop: 5, background: L(t.agent) } }),
           /* @__PURE__ */ e("div", { className: "sf-text", style: { flex: 1 }, children: g.text })
-        ] }, y) : /* @__PURE__ */ r("div", { className: "sf-step", style: { color: "var(--muted)" }, children: [
+        ] }, v) : /* @__PURE__ */ r("div", { className: "sf-step", style: { color: "var(--muted)" }, children: [
           /* @__PURE__ */ e(ie, { size: 14 }),
           " turn ended (",
           g.reason,
           ")"
-        ] }, y)))
+        ] }, v)))
       ]
     }
   );
 }
 function _e({ state: t }) {
-  const a = Math.max(1, ...t.agents.map((s) => s.avg_duration_ms ?? 0)), n = O(() => {
-    var p;
-    const s = [], f = /* @__PURE__ */ new Date();
+  const a = Math.max(1, ...t.agents.map((n) => n.avg_duration_ms ?? 0)), s = O(() => {
+    var d;
+    const n = [], f = /* @__PURE__ */ new Date();
     f.setHours(0, 0, 0, 0);
-    for (let u = 13; u >= 0; u--) {
-      const h = new Date(f);
-      h.setDate(f.getDate() - u), s.push({ day: h.toLocaleDateString([], { weekday: "short" }), completed: 0, failed: 0, credits: 0 });
+    for (let m = 13; m >= 0; m--) {
+      const u = new Date(f);
+      u.setDate(f.getDate() - m), n.push({ day: u.toLocaleDateString([], { weekday: "short" }), completed: 0, failed: 0, credits: 0 });
     }
-    const l = f.getTime() / 1e3 - 13 * 86400;
-    for (const u of t.runs) {
-      if (!u.started_at || u.started_at < l) continue;
-      const h = Math.min(13, Math.floor((u.started_at - l) / 86400));
-      u.outcome === "completed" ? s[h].completed++ : u.outcome !== "running" && s[h].failed++, s[h].credits += ((p = u.session) == null ? void 0 : p.credits) ?? 0;
+    const i = f.getTime() / 1e3 - 13 * 86400;
+    for (const m of t.runs) {
+      if (!m.started_at || m.started_at < i) continue;
+      const u = Math.min(13, Math.floor((m.started_at - i) / 86400));
+      m.outcome === "completed" ? n[u].completed++ : m.outcome !== "running" && n[u].failed++, n[u].credits += ((d = m.session) == null ? void 0 : d.credits) ?? 0;
     }
-    return s;
-  }, [t.runs]), i = Math.max(1, ...n.map((s) => s.completed + s.failed)), c = Math.max(1, ...n.map((s) => s.credits));
-  return /* @__PURE__ */ r(T, { children: [
-    /* @__PURE__ */ e("div", { className: "sf-grid", style: { marginBottom: 16 }, children: t.agents.map((s) => /* @__PURE__ */ r("div", { className: "sf-agent", style: { "--sf-c": F(s.id) }, children: [
+    return n;
+  }, [t.runs]), p = Math.max(1, ...s.map((n) => n.completed + n.failed)), h = Math.max(1, ...s.map((n) => n.credits));
+  return /* @__PURE__ */ r($, { children: [
+    /* @__PURE__ */ e("div", { className: "sf-grid", style: { marginBottom: 16 }, children: t.agents.map((n) => /* @__PURE__ */ r("div", { className: "sf-agent", style: { "--sf-c": L(n.id) }, children: [
       /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between" }, children: [
         /* @__PURE__ */ r("div", { className: "sf-row", children: [
-          /* @__PURE__ */ e(Q, { size: 16, style: { color: F(s.id) } }),
-          /* @__PURE__ */ e("strong", { style: { color: "var(--text-strong)" }, children: s.label })
+          /* @__PURE__ */ e(Q, { size: 16, style: { color: L(n.id) } }),
+          /* @__PURE__ */ e("strong", { style: { color: "var(--text-strong)" }, children: n.label })
         ] }),
-        s.live > 0 ? /* @__PURE__ */ r(A, { tone: "var(--accent)", children: [
+        n.live > 0 ? /* @__PURE__ */ r(R, { tone: "var(--accent)", children: [
           /* @__PURE__ */ e("span", { className: "sf-dot sf-pulse", style: { background: "var(--accent)", width: 7, height: 7 } }),
           "running"
-        ] }) : s.installed ? /* @__PURE__ */ e(A, { tone: "var(--ok)", children: "template installed" }) : /* @__PURE__ */ e(A, { tone: "var(--danger)", children: "template missing" })
+        ] }) : n.installed ? /* @__PURE__ */ e(R, { tone: "var(--ok)", children: "template installed" }) : /* @__PURE__ */ e(R, { tone: "var(--danger)", children: "template missing" })
       ] }),
-      /* @__PURE__ */ e("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 4 }, children: s.role }),
+      /* @__PURE__ */ e("div", { style: { fontSize: 12, color: "var(--muted)", marginTop: 4 }, children: n.role }),
       /* @__PURE__ */ r("dl", { className: "sf-kv", children: [
         /* @__PURE__ */ e("dt", { children: "Runs" }),
         /* @__PURE__ */ r("dd", { children: [
-          s.runs,
+          n.runs,
           " ",
           /* @__PURE__ */ r("span", { style: { color: "var(--muted)", fontWeight: 400 }, children: [
             "(",
-            s.completed,
+            n.completed,
             " ok, ",
-            s.failed,
+            n.failed,
             " failed)"
           ] })
         ] }),
         /* @__PURE__ */ e("dt", { children: "Avg / p90" }),
         /* @__PURE__ */ r("dd", { children: [
-          R(s.avg_duration_ms),
+          F(n.avg_duration_ms),
           " / ",
-          R(s.p90_duration_ms)
+          F(n.p90_duration_ms)
         ] }),
         /* @__PURE__ */ e("dt", { children: "Avg credits" }),
-        /* @__PURE__ */ e("dd", { children: s.avg_credits ?? "–" }),
+        /* @__PURE__ */ e("dd", { children: n.avg_credits ?? "–" }),
         /* @__PURE__ */ e("dt", { children: "Model" }),
-        /* @__PURE__ */ e("dd", { className: "sf-mono", children: s.model ?? "–" }),
+        /* @__PURE__ */ e("dd", { className: "sf-mono", children: n.model ?? "–" }),
         /* @__PURE__ */ e("dt", { children: "Last run" }),
         /* @__PURE__ */ r("dd", { children: [
-          _(s.last_run_at),
+          z(n.last_run_at),
           " ",
-          s.last_outcome && /* @__PURE__ */ r("span", { style: { color: Z(s.last_outcome) }, children: [
+          n.last_outcome && /* @__PURE__ */ r("span", { style: { color: Z(n.last_outcome) }, children: [
             "· ",
-            s.last_outcome
+            n.last_outcome
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ e("div", { className: "sf-bar", title: "Average duration relative to the slowest agent", children: /* @__PURE__ */ e("i", { style: { width: `${Math.round(100 * (s.avg_duration_ms ?? 0) / a)}%` } }) })
-    ] }, s.id)) }),
+      /* @__PURE__ */ e("div", { className: "sf-bar", title: "Average duration relative to the slowest agent", children: /* @__PURE__ */ e("i", { style: { width: `${Math.round(100 * (n.avg_duration_ms ?? 0) / a)}%` } }) })
+    ] }, n.id)) }),
     /* @__PURE__ */ r("div", { className: "sf-grid", children: [
-      /* @__PURE__ */ r(M, { children: [
-        /* @__PURE__ */ e(C, { children: "Runs per day (14d)" }),
-        /* @__PURE__ */ e("div", { className: "sf-spark", style: { "--sf-c": "var(--accent)" }, children: n.map((s, f) => /* @__PURE__ */ e("i", { title: `${s.day}: ${s.completed} ok, ${s.failed} failed`, style: { height: `${Math.round(100 * (s.completed + s.failed) / i)}%`, background: s.failed ? `linear-gradient(to top, var(--danger) ${Math.round(100 * s.failed / Math.max(1, s.completed + s.failed))}%, var(--accent) 0)` : void 0 } }, f)) }),
+      /* @__PURE__ */ r(A, { children: [
+        /* @__PURE__ */ e(T, { children: "Runs per day (14d)" }),
+        /* @__PURE__ */ e("div", { className: "sf-spark", style: { "--sf-c": "var(--accent)" }, children: s.map((n, f) => /* @__PURE__ */ e("i", { title: `${n.day}: ${n.completed} ok, ${n.failed} failed`, style: { height: `${Math.round(100 * (n.completed + n.failed) / p)}%`, background: n.failed ? `linear-gradient(to top, var(--danger) ${Math.round(100 * n.failed / Math.max(1, n.completed + n.failed))}%, var(--accent) 0)` : void 0 } }, f)) }),
         /* @__PURE__ */ r("div", { className: "sf-meta", style: { justifyContent: "space-between" }, children: [
-          /* @__PURE__ */ e("span", { children: n[0].day }),
+          /* @__PURE__ */ e("span", { children: s[0].day }),
           /* @__PURE__ */ e("span", { children: "today" })
         ] })
       ] }),
-      /* @__PURE__ */ r(M, { children: [
-        /* @__PURE__ */ e(C, { children: "Credits per day (14d)" }),
-        /* @__PURE__ */ e("div", { className: "sf-spark", style: { "--sf-c": "var(--warn)" }, children: n.map((s, f) => /* @__PURE__ */ e("i", { title: `${s.day}: ${s.credits.toFixed(1)} credits`, style: { height: `${Math.round(100 * s.credits / c)}%` } }, f)) }),
+      /* @__PURE__ */ r(A, { children: [
+        /* @__PURE__ */ e(T, { children: "Credits per day (14d)" }),
+        /* @__PURE__ */ e("div", { className: "sf-spark", style: { "--sf-c": "var(--warn)" }, children: s.map((n, f) => /* @__PURE__ */ e("i", { title: `${n.day}: ${n.credits.toFixed(1)} credits`, style: { height: `${Math.round(100 * n.credits / h)}%` } }, f)) }),
         /* @__PURE__ */ r("div", { className: "sf-meta", style: { justifyContent: "space-between" }, children: [
-          /* @__PURE__ */ e("span", { children: n[0].day }),
+          /* @__PURE__ */ e("span", { children: s[0].day }),
           /* @__PURE__ */ e("span", { children: "today" })
         ] })
       ] })
     ] })
   ] });
 }
-function S({ ok: t, unknown: a }) {
+function M({ ok: t, unknown: a }) {
   return /* @__PURE__ */ e("span", { className: "sf-dot", style: { background: a ? "var(--muted)" : t ? "var(--ok)" : "var(--danger)", width: 10, height: 10 } });
 }
-function ze({ infra: t }) {
+function $e({ infra: t }) {
   return /* @__PURE__ */ r("div", { className: "sf-grid", children: [
-    /* @__PURE__ */ r(M, { children: [
-      /* @__PURE__ */ e(C, { children: "Health" }),
+    /* @__PURE__ */ r(A, { children: [
+      /* @__PURE__ */ e(T, { children: "Health" }),
       /* @__PURE__ */ r("dl", { className: "sf-kv", style: { gridTemplateColumns: "auto 1fr" }, children: [
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(S, { ok: t.runner_ok }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: t.runner_ok }) }),
         /* @__PURE__ */ r("dd", { children: [
           "Actions runner ",
           t.runner_ok ? "online" : "offline",
           t.runners.map((a) => ` · ${a.name}${a.busy ? " (busy)" : ""}`)
         ] }),
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(S, { ok: !!t.webhooks_enabled, unknown: t.webhooks_enabled == null }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: !!t.webhooks_enabled, unknown: t.webhooks_enabled == null }) }),
         /* @__PURE__ */ r("dd", { children: [
           "Inbound webhooks ",
           t.webhooks_enabled == null ? "unknown (switch not readable here)" : t.webhooks_enabled ? "enabled" : "DISABLED"
         ] }),
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(S, { ok: t.templates_ok }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: t.templates_ok }) }),
         /* @__PURE__ */ r("dd", { children: [
           "Agent templates ",
           Object.values(t.templates).filter(Boolean).length,
@@ -726,11 +736,11 @@ function ze({ infra: t }) {
           Object.keys(t.templates).length,
           " installed on this gateway"
         ] }),
-        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(S, { ok: t.workflow_failures_recent === 0 }) }),
+        /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(M, { ok: t.workflow_failures_recent === 0 }) }),
         /* @__PURE__ */ r("dd", { children: [
           t.workflow_failures_recent,
           " failed workflow runs in the last 30 · last event ",
-          _(t.workflow_last_at)
+          z(t.workflow_last_at)
         ] }),
         /* @__PURE__ */ e("dt", { children: /* @__PURE__ */ e(le, { size: 12 }) }),
         /* @__PURE__ */ r("dd", { children: [
@@ -738,50 +748,50 @@ function ze({ infra: t }) {
           /* @__PURE__ */ e("span", { className: "sf-mono", children: t.gateway_host })
         ] })
       ] }),
-      t.errors.length > 0 && /* @__PURE__ */ e("div", { className: "sf-warnbox", style: { marginTop: 12 }, children: t.errors.map((a, n) => /* @__PURE__ */ e("div", { children: a }, n)) })
+      t.errors.length > 0 && /* @__PURE__ */ e("div", { className: "sf-warnbox", style: { marginTop: 12 }, children: t.errors.map((a, s) => /* @__PURE__ */ e("div", { children: a }, s)) })
     ] }),
-    /* @__PURE__ */ r(M, { children: [
-      /* @__PURE__ */ e(C, { children: "Webhook sources" }),
+    /* @__PURE__ */ r(A, { children: [
+      /* @__PURE__ */ e(T, { children: "Webhook sources" }),
       !t.sources_readable && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Source list not readable from the backend on this host. Check Settings → Webhooks." }),
       t.sources.map((a) => /* @__PURE__ */ r("div", { className: "sf-row", style: { padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12.5 }, children: [
-        /* @__PURE__ */ e(S, { ok: a.enabled }),
+        /* @__PURE__ */ e(M, { ok: a.enabled }),
         /* @__PURE__ */ e("span", { style: { flex: 1 }, children: a.label || a.id }),
         /* @__PURE__ */ e("span", { className: "sf-mono", style: { color: "var(--muted)" }, children: a.agent }),
         a.signed && /* @__PURE__ */ e("span", { className: "sf-chip", children: "signed" }),
-        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: _(a.last_used_at) })
+        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: z(a.last_used_at) })
       ] }, a.id))
     ] }),
-    /* @__PURE__ */ r(M, { children: [
-      /* @__PURE__ */ e(C, { children: "Templates" }),
-      Object.entries(t.templates).map(([a, n]) => /* @__PURE__ */ r("div", { className: "sf-row", style: { padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12.5 }, children: [
-        /* @__PURE__ */ e(S, { ok: n }),
+    /* @__PURE__ */ r(A, { children: [
+      /* @__PURE__ */ e(T, { children: "Templates" }),
+      Object.entries(t.templates).map(([a, s]) => /* @__PURE__ */ r("div", { className: "sf-row", style: { padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12.5 }, children: [
+        /* @__PURE__ */ e(M, { ok: s }),
         /* @__PURE__ */ r("span", { className: "sf-mono", children: [
           a,
           ".json"
         ] }),
-        /* @__PURE__ */ e("span", { style: { marginLeft: "auto", color: "var(--muted)" }, children: n ? "~/.kiro/agents" : "run scripts/install-agent.sh" })
+        /* @__PURE__ */ e("span", { style: { marginLeft: "auto", color: "var(--muted)" }, children: s ? "~/.kiro/agents" : "run scripts/install-agent.sh" })
       ] }, a))
     ] }),
-    /* @__PURE__ */ r(M, { children: [
-      /* @__PURE__ */ e(C, { children: "Recent workflow runs" }),
+    /* @__PURE__ */ r(A, { children: [
+      /* @__PURE__ */ e(T, { children: "Recent workflow runs" }),
       t.workflow_recent.map((a) => /* @__PURE__ */ r("div", { className: "sf-row", style: { padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12.5 }, children: [
-        /* @__PURE__ */ e(S, { ok: a.conclusion === "success", unknown: !a.conclusion }),
+        /* @__PURE__ */ e(M, { ok: a.conclusion === "success", unknown: !a.conclusion }),
         /* @__PURE__ */ e("a", { className: "sf-link", href: a.url, target: "_blank", rel: "noreferrer", style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: a.title || a.name }),
         /* @__PURE__ */ e("span", { className: "sf-mono", style: { color: "var(--muted)" }, children: a.event }),
-        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: _(a.created_at) })
+        /* @__PURE__ */ e("span", { style: { color: "var(--muted)" }, children: z(a.created_at) })
       ] }, a.id))
     ] })
   ] });
 }
 function Ae() {
-  const { state: t, error: a, loading: n, reload: i, api: c } = ge(), [s, f] = x("board"), [l, p] = x(null), [u, h] = x(null), m = (t == null ? void 0 : t.board.find((b) => b.issue === l)) ?? null, I = u ? (t == null ? void 0 : t.runs.find((b) => b.id === u.id || b.session_key && b.session_key === u.session_key)) ?? u : null;
+  const { state: t, error: a, loading: s, reload: p, api: h, showAll: n, setShowAll: f } = ge(), [i, d] = w("board"), [m, u] = w(null), [c, x] = w(null), k = (t == null ? void 0 : t.board.find((v) => v.issue === m)) ?? null, g = c ? (t == null ? void 0 : t.runs.find((v) => v.id === c.id || v.session_key && v.session_key === c.session_key)) ?? c : null;
   return /* @__PURE__ */ r("div", { className: "sf-root", children: [
     /* @__PURE__ */ e("style", { children: ue }),
     /* @__PURE__ */ e(
       ae,
       {
         title: "Software Factory",
-        subtitle: t ? `${t.repo} · ${t.stats.live_runs > 0 ? `${t.stats.live_runs} agent${t.stats.live_runs > 1 ? "s" : ""} running` : "idle"} · refreshed ${_(t.generated_at)}` : "Issue to merged PR, observed end to end"
+        subtitle: t ? `${t.repo} · ${t.stats.live_runs > 0 ? `${t.stats.live_runs} agent${t.stats.live_runs > 1 ? "s" : ""} running` : "idle"} · refreshed ${z(t.generated_at)}` : "Issue to merged PR, observed end to end"
       }
     ),
     /* @__PURE__ */ r("div", { className: "sf-body", children: [
@@ -790,42 +800,42 @@ function Ae() {
         " ",
         a
       ] }),
-      n && !t && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Reading GitHub and the gateway…" }),
-      t && /* @__PURE__ */ r(T, { children: [
+      s && !t && /* @__PURE__ */ e("div", { className: "sf-empty", children: "Reading GitHub and the gateway…" }),
+      t && /* @__PURE__ */ r($, { children: [
         /* @__PURE__ */ r("div", { className: "sf-stats", children: [
-          /* @__PURE__ */ e(k, { label: "In flight", value: String(t.stats.in_flight), accent: !0 }),
-          /* @__PURE__ */ e(k, { label: "Ready to merge", value: String(t.stats.ready) }),
-          /* @__PURE__ */ e(k, { label: "Parked", value: String(t.stats.parked) }),
-          /* @__PURE__ */ e(k, { label: "Shipped", value: String(t.stats.shipped) }),
-          /* @__PURE__ */ e(k, { label: "Median issue → ready", value: t.stats.median_cycle_s != null ? R(t.stats.median_cycle_s * 1e3) : "–" }),
-          /* @__PURE__ */ e(k, { label: "Pass rate", value: t.stats.pass_rate != null ? `${t.stats.pass_rate}%` : "–" }),
-          /* @__PURE__ */ e(k, { label: "Agent runs (7d)", value: `${t.stats.runs_week}` }),
-          /* @__PURE__ */ e(k, { label: "Credits (7d)", value: t.stats.credits_week.toFixed(1) })
+          /* @__PURE__ */ e(N, { label: "In flight", value: String(t.stats.in_flight), accent: !0 }),
+          /* @__PURE__ */ e(N, { label: "Ready to merge", value: String(t.stats.ready) }),
+          /* @__PURE__ */ e(N, { label: "Parked", value: String(t.stats.parked) }),
+          /* @__PURE__ */ e(N, { label: "Shipped", value: String(t.stats.shipped) }),
+          /* @__PURE__ */ e(N, { label: "Median issue → ready", value: t.stats.median_cycle_s != null ? F(t.stats.median_cycle_s * 1e3) : "–" }),
+          /* @__PURE__ */ e(N, { label: "Pass rate", value: t.stats.pass_rate != null ? `${t.stats.pass_rate}%` : "–" }),
+          /* @__PURE__ */ e(N, { label: "Agent runs (7d)", value: `${t.stats.runs_week}` }),
+          /* @__PURE__ */ e(N, { label: "Credits (7d)", value: t.stats.credits_week.toFixed(1) })
         ] }),
         /* @__PURE__ */ r("div", { className: "sf-row", style: { justifyContent: "space-between", flexWrap: "wrap" }, children: [
-          /* @__PURE__ */ e(ve, { value: s, onChange: f, items: [["board", "Board"], ["runs", "Agent runs"], ["agents", "Agents"], ["infra", "Infrastructure"]] }),
+          /* @__PURE__ */ e(ve, { value: i, onChange: d, items: [["board", "Board"], ["runs", "Agent runs"], ["agents", "Agents"], ["infra", "Infrastructure"]] }),
           /* @__PURE__ */ r("div", { className: "sf-row", style: { marginBottom: 16 }, children: [
-            /* @__PURE__ */ e("span", { className: "sf-row", style: { fontSize: 12, color: "var(--muted)" }, children: t.stats.live_runs > 0 ? /* @__PURE__ */ r(T, { children: [
+            /* @__PURE__ */ e("span", { className: "sf-row", style: { fontSize: 12, color: "var(--muted)" }, children: t.stats.live_runs > 0 ? /* @__PURE__ */ r($, { children: [
               /* @__PURE__ */ e(se, { size: 13, className: "sf-pulse", style: { color: "var(--accent)" } }),
               " live"
-            ] }) : /* @__PURE__ */ r(T, { children: [
+            ] }) : /* @__PURE__ */ r($, { children: [
               /* @__PURE__ */ e(ne, { size: 13 }),
               " polling"
             ] }) }),
-            /* @__PURE__ */ r("button", { className: "sf-btn", onClick: i, children: [
+            /* @__PURE__ */ r("button", { className: "sf-btn", onClick: p, children: [
               /* @__PURE__ */ e(oe, { size: 13 }),
               " Refresh"
             ] })
           ] })
         ] }),
-        s === "board" && /* @__PURE__ */ e(be, { state: t, onOpen: (b) => p(b.issue) }),
-        s === "runs" && /* @__PURE__ */ e(ye, { runs: t.runs, onWatch: h }),
-        s === "agents" && /* @__PURE__ */ e(_e, { state: t }),
-        s === "infra" && /* @__PURE__ */ e(ze, { infra: t.infra })
+        i === "board" && /* @__PURE__ */ e(be, { state: t, onOpen: (v) => u(v.issue), showAll: n, onToggleAll: f }),
+        i === "runs" && /* @__PURE__ */ e(ye, { runs: t.runs, onWatch: x }),
+        i === "agents" && /* @__PURE__ */ e(_e, { state: t }),
+        i === "infra" && /* @__PURE__ */ e($e, { infra: t.infra })
       ] })
     ] }),
-    m && !u && /* @__PURE__ */ e(we, { it: m, runs: t.runs, onClose: () => p(null), onWatch: h }),
-    I && /* @__PURE__ */ e(Ne, { run: I, api: c, onClose: () => h(null) })
+    k && !c && /* @__PURE__ */ e(we, { it: k, runs: t.runs, onClose: () => u(null), onWatch: x }),
+    g && /* @__PURE__ */ e(Ne, { run: g, api: h, onClose: () => x(null) })
   ] });
 }
 export {
