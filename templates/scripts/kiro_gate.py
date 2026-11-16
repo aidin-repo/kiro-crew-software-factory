@@ -15,7 +15,8 @@ Checks:
   5. SPEC    the PR body names the spec comment and its SHA-256 matches the comment body
 
 Everything the gate reads comes from the GitHub API with the job-scoped GITHUB_TOKEN.
-It never checks out or runs pull-request code.
+It never checks out or runs pull-request code. On PASS it writes `outcome` to
+GITHUB_OUTPUT so the pr-gate job can dispatch the delivery-approver as its next step.
 """
 
 import fnmatch
@@ -345,8 +346,18 @@ def main():
         print("Delivery gate for PR {}: {}".format(pull_request["number"], outcome))
         for reason in reasons:
             print("  " + reason)
+        write_step_output(environment, outcome)
     except (DispatchError, GateError, OSError, json.JSONDecodeError, KeyError) as error:
         raise SystemExit("Delivery gate could not decide: {}".format(error)) from error
+
+
+def write_step_output(environment, outcome):
+    """Tell the workflow the outcome so the approver step runs only after a PASS."""
+    path = environment.get("GITHUB_OUTPUT")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write("outcome={}\n".format(outcome))
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 > **Proof of concept.** This is a POC. It still needs to be tested and validated before you rely on it, and it should not be used on anything you cannot afford to review carefully.
 
-**Write an issue. Add a label. Get a specified, implemented, independently reviewed, gate-checked pull request.** Five small Kiro Crew agents on a machine you control each do one job and hand off through GitHub labels. You decide what ships.
+**Write an issue. Add a label. Get a specified, implemented, independently reviewed, gate-checked, approved pull request.** Six small Kiro Crew agents on a machine you control each do one job and hand off through GitHub labels. You decide what ships.
 
 ## What is Kiro Crew
 
@@ -11,7 +11,7 @@
 This project uses three of its features:
 
 - **Webhooks:** an authenticated endpoint that starts an agent when an outside event arrives. Here every event is a GitHub label.
-- **Agent templates:** named agents with their own instructions and tools. Here, five roles: planner, implementer, reviewer, scribe and auditor, each a template file under `~/.kiro/agents/`.
+- **Agent templates:** named agents with their own instructions, tools and model. Here, six roles: planner, implementer, reviewer, approver, scribe and auditor, each a template file under `~/.kiro/agents/`. Planner, implementer and approver run on Opus; reviewer, scribe, auditor and the fast-lane worker on Sonnet (the `model` field in each template; change it in `templates/agent.local/`).
 - **Host guardrails:** tool approval, denied commands, sandboxing and an audit log apply to what each agent does.
 
 ## Why a "software factory"
@@ -27,13 +27,14 @@ This project takes that literally. GitHub labels are the queue, the state machin
 | Review | `delivery-reviewer` reviews against the spec, posts a `VERDICT:` | `kiro-review` | `kiro-ready` or `kiro-changes-requested` |
 | Fix | `delivery-implementer` again, at most 3 rounds | `kiro-changes-requested` | `kiro-review` |
 | Gate | `kiro_gate.py`, no model: head SHA reviewed, CI green, files in scope, spec hash | `kiro-ready` | `kiro-ready-to-merge` or `kiro-parked` |
-| Ship | You merge | | |
+| Approve | `delivery-approver` reads spec, review, gate comment and diff through `gh`, posts a `DECISION:` | `kiro-ready-to-merge` | `kiro-approved-to-merge` or `kiro-needs-owner` |
+| Ship | You merge (or the approver does, if you set `KIRO_APPROVER_MERGE: "true"`) | | |
 | Document | `delivery-scribe` opens a docs-only PR | merged `kiro/issue-N` | |
 | Watch | `delivery-auditor` reports stalls (the only thing that polls) | timer | |
 
 A fast lane still exists: label an issue `kiro-task` and `github-worker` implements the issue text directly with no spec, review or gate.
 
-In testing, a labelled issue became a `kiro-ready-to-merge` pull request in 4 to 8 minutes with no human in the loop, on a Mac laptop and on an EC2 instance. Each handoff fired within 3 to 10 seconds of the previous label.
+In testing, a labelled issue became a `kiro-ready-to-merge` pull request in 4 to 8 minutes with no human in the loop, on a Mac laptop and on an EC2 instance. Each handoff fired within 3 to 10 seconds of the previous label. The approver stage was added after those runs and adds one more model turn; its timing is not yet measured.
 
 ## How it works
 
@@ -46,8 +47,10 @@ flowchart LR
     IMP -->|PR kiro-review| R["reviewer<br/>VERDICT review"]
     R -->|kiro-changes-requested| IMP
     R -->|kiro-ready| G["gate script<br/>no model"]
-    G -->|kiro-ready-to-merge| M["You merge"]
-    G -.->|kiro-parked| M
+    G -->|kiro-ready-to-merge| A["approver<br/>DECISION comment"]
+    G -.->|kiro-parked| M["You merge"]
+    A -->|kiro-approved-to-merge| M
+    A -.->|kiro-needs-owner| M
     M -->|merged| S["scribe<br/>docs PR"]
 ```
 
@@ -78,7 +81,7 @@ scripts/install-agent.sh
 scripts/setup-gateway.sh    # auto-approve rules + trusted program paths; run its "->" lines, re-run
 ```
 
-Webhook runs are unattended, so `setup-gateway.sh` is what lets the agents run `gh`, `git`, `npm` and the file tools at all. Then under **Settings → Webhooks** create one signed source per template with **New** (planner, implementer, reviewer, scribe, worker), picking the template as the Agent. Copy every token and signing secret when shown; they appear once. Sources belong to this gateway: a new machine needs new sources.
+Webhook runs are unattended, so `setup-gateway.sh` is what lets the agents run `gh`, `git`, `npm` and the file tools at all. Then under **Settings → Webhooks** create one signed source per template with **New** (planner, implementer, reviewer, approver, scribe, worker), picking the template as the Agent. Copy every token and signing secret when shown; they appear once. Sources belong to this gateway: a new machine needs new sources.
 
 **2. GitHub side.** Replace `OWNER/REPO` and `~/code/REPO`:
 
@@ -104,7 +107,7 @@ scripts/preflight.sh OWNER/REPO
 CLEANUP=1 scripts/smoke-test.sh OWNER/REPO
 ```
 
-Then write a real issue and add `kiro-deliver`. Watch the labels move on the issue, then on the PR. When the PR reads `kiro-ready-to-merge`, read the reviewer's `VERDICT:` and the gate comment, and merge.
+Then write a real issue and add `kiro-deliver`. Watch the labels move on the issue, then on the PR. When the PR reads `kiro-approved-to-merge`, read the approver's `DECISION:`, the reviewer's `VERDICT:` and the gate comment, and merge. `kiro-needs-owner` on the PR means the approver escalated; its comment says why.
 
 ## Security model
 
@@ -118,7 +121,7 @@ An issue's text can influence a program that has shell access to your machine, s
 - **One agent, one job, one token.** Each stage runs as its own template with its own webhook source in its own ephemeral session, so a stage cannot borrow another's permissions and the reviewer never reads the implementer's session.
 - **Trusted code only.** Jobs check out the default branch. The gate never checks out PR code; it reads the GitHub API.
 - **Signed and loopback.** The dispatcher sends a bearer token plus an HMAC signature, refuses any non-loopback webhook URL, ignores proxy settings and never follows a redirect.
-- **No merge, no deploy.** `kiro-ready-to-merge` is the pipeline's last word. Protect the default branch with a ruleset that requires a pull request and does not let admins bypass it (docs/04, section 4.5).
+- **No merge, no deploy, by default.** `kiro-approved-to-merge` is the pipeline's last word. The approver runs `gh pr merge` only when the `pr-gate` job sets `KIRO_APPROVER_MERGE: "true"`; it ships as `"false"`. The approver always escalates a PR with a `## Sensitive changes` section, whatever the flag says. Protect the default branch with a ruleset that requires a pull request and does not let admins bypass it (docs/04, section 4.5).
 - **Rounds are capped.** Three review rounds, then the gate parks the PR for you.
 - **It runs shell commands as you.** Commits, reviews and PRs appear under your GitHub account, so treat the label like typing the command yourself.
 
@@ -154,10 +157,10 @@ The folders are `templates/` (workflow, dispatcher, gate, tests, agent prompts),
 
 | Script | Does |
 |---|---|
-| `install-agent.sh` | Copies the six templates into `~/.kiro/agents/`; files in `templates/agent.local/` override them; `--keep` protects in-place edits |
+| `install-agent.sh` | Copies the seven templates into `~/.kiro/agents/`; files in `templates/agent.local/` override them; `--keep` protects in-place edits |
 | `install-app.sh` | Builds, installs, trusts and enables the Software Factory app on this gateway host |
 | `setup-gateway.sh` | Writes the unattended auto-approve rules, checks program paths and the credential helper, prints the fixes |
-| `setup-github.sh OWNER/REPO` | Creates the labels, stores the ten webhook secrets |
+| `setup-github.sh OWNER/REPO` | Creates the labels, stores the twelve webhook secrets |
 | `install-into-repo.sh PATH` | Copies the workflow, dispatcher, gate and tests into your clone |
 | `install-runner.sh OWNER/REPO` | Downloads, verifies and registers the runner; `SERVICE=1` also installs it as a service |
 | `preflight.sh OWNER/REPO` | Read-only check of everything above |

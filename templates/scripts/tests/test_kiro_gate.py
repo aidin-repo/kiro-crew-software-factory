@@ -318,3 +318,12 @@ def test_gather_refuses_a_spec_comment_by_someone_else():
     github.paginated = lambda path, accept=None: []
     with pytest.raises(gate.GateError, match="not written by the repository owner"):
         gate.gather_facts(github, {"number": 77}, OWNER)
+
+
+def test_step_output_names_the_outcome_for_the_approver_step(tmp_path):
+    output = tmp_path / "github_output"
+    output.write_text("earlier=1\n", encoding="utf-8")
+    gate.write_step_output({"GITHUB_OUTPUT": str(output)}, "kiro-ready-to-merge")
+    assert output.read_text(encoding="utf-8") == "earlier=1\noutcome=kiro-ready-to-merge\n"
+    # Outside Actions there is no file to write; the gate must not fail because of it.
+    gate.write_step_output({}, "kiro-parked")

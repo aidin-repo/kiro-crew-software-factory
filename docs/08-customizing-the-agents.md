@@ -6,7 +6,7 @@ The six agents are plain files. You can change what each one knows, what it may 
 
 | Layer | File | Scope | Takes effect |
 |---|---|---|---|
-| **Role prompt and tools** | `~/.kiro/agents/<role>.json`: `prompt`, `tools`, `allowedTools`, `description` | this machine, every repository it serves | the next webhook run; no restart, no mate step |
+| **Role prompt, tools and model** | `~/.kiro/agents/<role>.json`: `prompt`, `tools`, `allowedTools`, `description`, `model` | this machine, every repository it serves | the next webhook run; no restart, no mate step |
 | **Per-repository instructions** | `.github/scripts/dispatch_kiro_event.py` in your repository, function `instructions()`: one text block per mode | one repository | after the change is merged to the default branch (the workflow runs from there) |
 | **Repository knowledge** | `AGENTS.md`, `CONTRIBUTING.md`, steering files, `package.json` scripts: whatever is in the trusted checkout | one repository | immediately, if a prompt tells the agent to read it |
 
@@ -56,6 +56,10 @@ Worked example, a Python repository with pytest and ruff:
 
 Repository-specific rules (which folders are off limits, how to name branches, which tests must run) belong in your repository's `AGENTS.md`. The shipped prompts do not read it on their own; add one sentence to the implementer and reviewer prompts: `Read AGENTS.md at the root of the trusted checkout first and follow it where it does not conflict with these instructions.`
 
+## 8.3b Change a role's model
+
+Each template names its model in the `model` field: `claude-opus-5.5` for the planner, implementer and approver (they write or judge code), `claude-sonnet-5.5` for the reviewer, scribe, auditor and fast-lane worker. Copy the template into `templates/agent.local/`, change `model`, run `scripts/install-agent.sh`. The value must be a model id kiro-cli accepts (`kiro-cli chat --list-models`); `auto` lets the gateway choose. The Software Factory app's Agent runs tab shows the model each run actually used, so you can compare cost and duration per role after a change.
+
 ## 8.4 Change what a role may do
 
 `tools` is what the agent can see; `allowedTools` is what kiro-cli would auto-approve on an interactive surface. In a webhook run neither grants shell or file access by itself (doc 05, section 5.5): a call runs only if a `hooks.auto_approve_tools` rule matches it and the program is trusted. So:
@@ -87,9 +91,12 @@ Other parts parse these. Changing one without changing its reader breaks the cha
 | The trusted control-plane section and the `UNTRUSTED_GITHUB_DATA_BASE64` block in the message | dispatcher | every role's prompt |
 | Spec comment starting `## Intent`, ending its design with a ```` ```files ```` block | planner | implementer, reviewer, gate (`kiro_gate.py` rejects files outside it) |
 | PR body lines `Closes #N`, `Spec: <comment url>`, `Spec-SHA256: <64 hex>` | implementer | reviewer, gate (`SPEC_SHA_PATTERN`) |
-| Review body first line `VERDICT: approve` or `VERDICT: request-changes`, then `HEAD REVIEWED: <40-char sha>` | reviewer | gate (`kiro_gate.py` matches the head) |
+| Review body first line `VERDICT: approve` or `VERDICT: request-changes`, then `HEAD REVIEWED: <40-char sha>` | reviewer | gate (`kiro_gate.py` matches the head), approver |
+| Approver comment first line `DECISION: approve` or `DECISION: escalate`, then `HEAD APPROVED: <40-char sha>` | approver | smoke test, humans, the app's board |
+| Gate step output `outcome=<label>` in `GITHUB_OUTPUT` | gate | the `pr-gate` job's approver step (`if: steps.gate.outputs.outcome == 'kiro-ready-to-merge'`) |
+| `KIRO_APPROVER_MERGE` on the approver step | workflow | dispatcher (`approver_may_merge`); the approver's `gh pr merge` is allowed only when it is `"true"` |
 | Gate comment marker `<!-- kiro-gate -->` | gate | smoke test, humans |
-| Label names (`kiro-plan` ... `kiro-parked`) and branch names `kiro/issue-N`, `kiro/docs-pr-N` | all | workflow triggers, dispatcher label table, gate, smoke test |
+| Label names (`kiro-plan` ... `kiro-approved-to-merge`, `kiro-parked`) and branch names `kiro/issue-N`, `kiro/docs-pr-N` | all | workflow triggers, dispatcher label table, gate, smoke test |
 | Owner checks: issue author, label sender, PR branch, PR open | dispatcher | the security model; do not loosen |
 | Plain one-line shell, long text via the write tool and `--body-file`, programs in `/usr/bin` with a rule | templates | the unattended policy (doc 05, section 5.5) |
 | `MAX_REVIEW_ROUNDS` | dispatcher | `pr-changes`; the cap that stops a review loop |

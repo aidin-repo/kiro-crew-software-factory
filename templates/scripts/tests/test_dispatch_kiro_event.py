@@ -369,6 +369,58 @@ def test_pr_gate_is_never_sent_to_an_agent(tmp_path):
     dispatch.validate_event("pr-gate", labelled_pr_event("kiro-ready"), pr_environment(tmp_path, "pr-gate"))
 
 
+def test_pr_approve_dispatches_the_final_approver_on_the_gate_event(tmp_path):
+    payload = dispatch.build_payload(labelled_pr_event("kiro-ready"), pr_environment(tmp_path, "pr-approve"))
+    message = payload["message"]
+    assert "mode: pr-approve" in message
+    assert "- label kiro-ready applied by repository owner: {}".format(OWNER) in message
+    assert "- delivery issue: #42" in message
+    assert "- merge enabled: false" in message
+    assert "FINAL approver" in message
+    assert "<!-- kiro-gate -->" in message
+    assert "DECISION: approve" in message and "DECISION: escalate" in message
+    assert "HEAD APPROVED:" in message
+    assert "gh pr comment 77 --body-file" in message
+    assert "--remove-label kiro-ready-to-merge --add-label kiro-approved-to-merge" in message
+    assert "--remove-label kiro-ready-to-merge --add-label kiro-needs-owner" in message
+    assert "## Sensitive changes" in message
+    assert "never run gh pr merge" in message
+    assert "gh pr merge 77" not in message
+    assert "check out nothing" in message
+    assert payload["sessionKey"].startswith("hook:github:pr-approve:")
+
+
+def test_pr_approve_merges_only_when_the_workflow_enables_it(tmp_path):
+    env = pr_environment(tmp_path, "pr-approve")
+    env["KIRO_APPROVER_MERGE"] = "true"
+    message = dispatch.build_payload(labelled_pr_event("kiro-ready"), env)["message"]
+    assert "- merge enabled: true" in message
+    assert "gh pr merge 77 --squash --delete-branch" in message
+    assert "never merge on escalate" in message
+    for value in ("false", "0", "no", "off", ""):
+        env["KIRO_APPROVER_MERGE"] = value
+        assert "never run gh pr merge" in dispatch.build_payload(labelled_pr_event("kiro-ready"), env)["message"]
+
+
+def test_pr_approve_is_gated_like_the_other_pr_label_modes(tmp_path):
+    env = pr_environment(tmp_path, "pr-approve")
+    with pytest.raises(dispatch.DispatchError, match="requires the kiro-ready label"):
+        dispatch.build_payload(labelled_pr_event("kiro-ready-to-merge"), env)
+    with pytest.raises(dispatch.DispatchError, match="must be applied by the repository owner"):
+        dispatch.build_payload(labelled_pr_event("kiro-ready", sender="someone-else"), env)
+    with pytest.raises(dispatch.DispatchError, match="not forks"):
+        dispatch.build_payload(labelled_pr_event("kiro-ready", head_repo="someone-else/fork"), env)
+    with pytest.raises(dispatch.DispatchError, match="kiro/issue-N"):
+        dispatch.build_payload(labelled_pr_event("kiro-ready", head_ref="feature/x"), env)
+    with pytest.raises(dispatch.DispatchError, match="open, unmerged"):
+        dispatch.build_payload(labelled_pr_event("kiro-ready", state="closed"), env)
+
+
+def test_lifecycle_labels_include_the_approver_outcome():
+    assert "kiro-approved-to-merge" in dispatch.LIFECYCLE_LABELS
+    assert dispatch.LABEL_FOR_MODE["pr-approve"] == dispatch.LABEL_FOR_MODE["pr-gate"] == "kiro-ready"
+
+
 def test_delivery_issue_number_reads_only_kiro_branches():
     assert dispatch.delivery_issue_number({"head": {"ref": "kiro/issue-42"}}) == 42
     assert dispatch.delivery_issue_number({"head": {"ref": "kiro/issue-"}}) is None

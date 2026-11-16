@@ -55,7 +55,7 @@ So each machine needs its own gateway, its own templates, its own **webhook sour
    ```
 
    Expect `->` lines on a fresh box. On Amazon Linux 2023 they were, in order: copy `gh` from `~/.local/bin` into `/usr/bin` (`sudo install -m 0755 ~/.local/bin/gh /usr/bin/gh`) and remove the `~/.local/bin` copy; point `/usr/bin/node`, `npm`, `npx` at the Node 22 install (`sudo ln -sfn /usr/local/node-v22.12.0-linux-arm64/bin/node /usr/bin/node`, same for `npm` and `npx`) and delete the `/usr/local/bin` symlinks that would shadow them; `sudo dnf install -y perl-Digest-SHA`; then `gh auth setup-git` because the helper still named the old `gh` path. Re-run the script until it prints `Gateway ready`.
-5. **Create the five webhook sources** on this machine's dashboard (Settings → Remote Crew to reach it), then `scripts/setup-github.sh OWNER/REPO` here so the repo secrets match this gateway.
+5. **Create the six webhook sources** on this machine's dashboard (Settings → Remote Crew to reach it), then `scripts/setup-github.sh OWNER/REPO` here so the repo secrets match this gateway.
 6. **Install the workflow** into a clone (`scripts/install-into-repo.sh`), merge it.
 7. **Install the runner as a service:**
 
@@ -65,6 +65,18 @@ So each machine needs its own gateway, its own templates, its own **webhook sour
 
    A runner started with `./run.sh` in an SSH session dies when the session ends and jobs sit `queued`.
 8. **Verify:** `scripts/preflight.sh OWNER/REPO`, then `CLEANUP=1 scripts/smoke-test.sh OWNER/REPO`.
+
+### Updating a box that already runs the factory
+
+When a new version adds a role (the approver did), the existing sources, secrets and runner stay valid; only the new pieces are added:
+
+```bash
+cd ~/kiro-crew-software-factory && git pull
+scripts/install-agent.sh                      # re-installs every template, including the new one
+scripts/setup-gateway.sh --check              # no new rules are usually needed
+```
+
+Then on this machine's dashboard, Settings → Webhooks → New, one source for the new template (signed), and `gh secret set` its pair in the repository (doc 01 step 4 names the secrets). Re-run `scripts/install-into-repo.sh /path/to/clone` with `FORCE=1` so the workflow, dispatcher, gate and tests are the new versions, review the diff, open and merge that PR. `scripts/preflight.sh OWNER/REPO` must pass, then `CLEANUP=1 scripts/smoke-test.sh OWNER/REPO`. The dashboard app, if installed, is refreshed with `scripts/install-app.sh`.
 
 ## 7.6 Container (recipe, not yet run end to end)
 

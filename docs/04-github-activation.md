@@ -12,7 +12,7 @@ Everything GitHub needs before a label can start work. The scripts in `scripts/`
 
 ## 4.2 Create the labels and store the secrets
 
-One webhook source per template means one token and signing secret pair per template. Have the five pairs from doc 05 ready (you can skip the scribe and worker pairs if you do not want those hops).
+One webhook source per template means one token and signing secret pair per template. Have the six pairs from doc 05 ready (you can skip the approver, scribe and worker pairs if you do not want those hops).
 
 ```bash
 export KIROCREW_WEBHOOK_TOKEN='planner token'
@@ -23,6 +23,8 @@ export KIROCREW_WEBHOOK_TOKEN_REVIEWER='...'
 export KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER='...'
 export KIROCREW_WEBHOOK_TOKEN_SCRIBE='...'
 export KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE='...'
+export KIROCREW_WEBHOOK_TOKEN_APPROVER='...'
+export KIROCREW_WEBHOOK_SIGNING_SECRET_APPROVER='...'
 export KIROCREW_WEBHOOK_TOKEN_WORKER='...'
 export KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER='...'
 scripts/setup-github.sh OWNER/REPO
@@ -44,6 +46,8 @@ gh secret set KIROCREW_WEBHOOK_TOKEN_REVIEWER --repo OWNER/REPO
 gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER --repo OWNER/REPO
 gh secret set KIROCREW_WEBHOOK_TOKEN_SCRIBE --repo OWNER/REPO
 gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_TOKEN_APPROVER --repo OWNER/REPO
+gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_APPROVER --repo OWNER/REPO
 gh secret set KIROCREW_WEBHOOK_TOKEN_WORKER --repo OWNER/REPO
 gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER --repo OWNER/REPO
 ```
@@ -55,6 +59,7 @@ Which job uses which secret:
 | `issue-plan`, `issue-deliver` | `kiro-plan`, `kiro-deliver` | `KIROCREW_WEBHOOK_TOKEN` | planner |
 | `issue-implement`, `pr-changes` | `kiro-approved`, `kiro-changes-requested` | `..._IMPLEMENTER` | implementer |
 | `pr-review-round` | `kiro-review` | `..._REVIEWER` | reviewer |
+| `pr-gate` → approver step | PASS from the gate in the same job | `..._APPROVER` | approver |
 | `pr-merged` | merged `kiro/issue-N` PR | `..._SCRIBE` | scribe |
 | `issue-task` | `kiro-task` | `..._WORKER` | github-worker |
 | `pr-gate` | `kiro-ready` | none: uses `github.token` | the gate script |

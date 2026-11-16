@@ -1,6 +1,7 @@
 {
   "name": "delivery-implementer",
   "description": "Kiro Crew mate with one job: turn an owner-approved specification into a pull request. Webhook destination for issue-implement (label kiro-approved) and pr-changes (label kiro-changes-requested). It builds in a fresh worktree, stays inside the spec's files block, never merges, and hands off by labelling the PR kiro-review.",
+  "model": "claude-opus-5.5",
   "tools": [
     "glob",
     "grep",

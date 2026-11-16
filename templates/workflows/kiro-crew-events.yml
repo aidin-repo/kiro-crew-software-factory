@@ -10,7 +10,8 @@
 #   issues:labeled  kiro-task                -> issue-task      : github-worker implements directly (fast lane, no spec)
 #   PR:labeled      kiro-review              -> pr-review-round : delivery-reviewer reviews, labels kiro-ready / kiro-changes-requested
 #   PR:labeled      kiro-changes-requested   -> pr-changes      : delivery-implementer fixes, relabels kiro-review (max 3 rounds)
-#   PR:labeled      kiro-ready               -> pr-gate         : kiro_gate.py (no agent) labels kiro-ready-to-merge / kiro-parked
+#   PR:labeled      kiro-ready               -> pr-gate         : kiro_gate.py (no agent) labels kiro-ready-to-merge / kiro-parked,
+#                                                                 then on PASS dispatches delivery-approver (mode pr-approve)
 #   PR closed+merged, head kiro/issue-N      -> pr-merged       : delivery-scribe refreshes docs
 #
 # Every job runs on YOUR machine (self-hosted runner labelled "kirocrew") and talks to the
@@ -21,6 +22,7 @@
 #   KIROCREW_WEBHOOK_TOKEN_IMPLEMENTER / KIROCREW_WEBHOOK_SIGNING_SECRET_IMPLEMENTER -> delivery-implementer
 #   KIROCREW_WEBHOOK_TOKEN_REVIEWER / KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER       -> delivery-reviewer
 #   KIROCREW_WEBHOOK_TOKEN_SCRIBE / KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE           -> delivery-scribe
+#   KIROCREW_WEBHOOK_TOKEN_APPROVER / KIROCREW_WEBHOOK_SIGNING_SECRET_APPROVER       -> delivery-approver
 #   KIROCREW_WEBHOOK_TOKEN_WORKER / KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER           -> github-worker (fast lane)
 # A source's destination is fixed on the Kiro Crew Webhooks page, so a job that borrows
 # another mate's token runs AS that mate and inherits its refusals.
@@ -213,6 +215,7 @@ jobs:
           path: trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
           persist-credentials: false
       - name: Run the delivery gate
+        id: gate
         env:
           KIRO_MODE: pr-gate
           KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
@@ -221,6 +224,21 @@ jobs:
           # no CI workflow would park every PR; set this to "false" to make that a warning.
           KIRO_GATE_REQUIRE_CI: "true"
         run: python3 "$KIRO_WORKSPACE/.github/scripts/kiro_gate.py"
+      # The gate's label is written with github.token, which never re-triggers this
+      # workflow, so the approver is started here rather than by a label. It is a model
+      # with read access through gh; it writes one DECISION comment and one label and,
+      # only when KIRO_APPROVER_MERGE is "true", runs gh pr merge on approve. Leave it
+      # "false" to keep the owner as the one who merges. Remove this step to run with
+      # no approver at all (kiro-ready-to-merge is then the last label, as before).
+      - name: Dispatch the final approver
+        if: steps.gate.outputs.outcome == 'kiro-ready-to-merge'
+        env:
+          KIRO_MODE: pr-approve
+          KIRO_WORKSPACE: ${{ github.workspace }}/trusted-main-${{ github.run_id }}-${{ github.run_attempt }}
+          KIRO_APPROVER_MERGE: "false"
+          KIROCREW_WEBHOOK_TOKEN: ${{ secrets.KIROCREW_WEBHOOK_TOKEN_APPROVER }}
+          KIROCREW_WEBHOOK_SIGNING_SECRET: ${{ secrets.KIROCREW_WEBHOOK_SIGNING_SECRET_APPROVER }}
+        run: python3 "$KIRO_WORKSPACE/.github/scripts/dispatch_kiro_event.py"
 
   pr-merged:
     # Same-repo delivery branches only; the dispatcher additionally checks that the

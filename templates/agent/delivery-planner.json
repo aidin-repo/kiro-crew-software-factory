@@ -1,6 +1,7 @@
 {
   "name": "delivery-planner",
   "description": "Kiro Crew mate with one job: turn an owner-written GitHub issue into an AIDLC specification posted as one issue comment. It never edits files, pushes or opens pull requests. Webhook destination for kiro-plan (spec only, read-only) and kiro-deliver (spec, then it applies kiro-approved so the implementer starts without a second human step).",
+  "model": "claude-opus-5.5",
   "tools": [
     "glob",
     "grep",
