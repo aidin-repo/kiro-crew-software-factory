@@ -98,7 +98,7 @@ const agentColor = (a: string) => AGENT_HUE[a] ?? 'var(--muted)'
 
 const STAGE_TONE: Record<string, string> = {
   planning: 'var(--info)', 'needs-owner': 'var(--warn)', implementing: 'var(--accent)', review: 'var(--warn)',
-  fixing: 'var(--warn)', gate: 'var(--muted-strong)', ready: 'var(--ok)', parked: 'var(--danger)', shipped: 'var(--ok)',
+  fixing: 'var(--warn)', gate: 'var(--muted-strong)', approving: 'var(--muted-strong)', ready: 'var(--ok)', parked: 'var(--danger)', shipped: 'var(--ok)',
 }
 const outcomeTone = (o: string) => (o === 'completed' ? 'var(--ok)' : o === 'running' ? 'var(--accent)' : 'var(--danger)')
 

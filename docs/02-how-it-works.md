@@ -1,6 +1,6 @@
 # 2. How it works
 
-You write a GitHub issue and add one label. Five small Kiro Crew agents, running on your own machine, take it from there: one writes a specification, one implements it, one reviews it independently, a script checks the result, and one updates the docs after you merge. Each hands off to the next through a GitHub label. You read the final pull request and decide whether to merge.
+You write a GitHub issue and add one label. Six small Kiro Crew agents, running on your own machine, take it from there: one writes a specification, one implements it, one reviews it independently, a script checks the result, one gives the final approval, and one updates the docs after you merge. Each hands off to the next through a GitHub label. You read the final pull request and decide whether to merge.
 
 ## Using it
 
@@ -26,9 +26,9 @@ Users drafting longer messages want to know how long their message is before sen
 
 **2. Add the `kiro-deliver` label.** This is the "go" signal. Only the repository owner's label counts; a label from anyone else is refused. You can add it when you create the issue.
 
-**3. Wait a few minutes.** Watch the labels move: `kiro-approved` on the issue within about a minute, then a pull request on `kiro/issue-<number>` labelled `kiro-review`, then `kiro-ready`, then `kiro-ready-to-merge`. In testing the whole run took 6 to 8 minutes. Each agent's report arrives as a dashboard notification titled `Webhook: GitHub <repo>`.
+**3. Wait a few minutes.** Watch the labels move: `kiro-approved` on the issue within about a minute, then a pull request on `kiro/issue-<number>` labelled `kiro-review`, then `kiro-ready`, then `kiro-ready-to-merge`, then `kiro-approved-to-merge`. In testing the run to `kiro-ready-to-merge` took 6 to 8 minutes; the approver adds one more turn. Each agent's report arrives as a dashboard notification titled `Webhook: GitHub <repo>`.
 
-**4. Decide.** Open the PR. The reviewer's `VERDICT:` review and the gate's "Delivery gate: PASS" comment tell you what was checked. CI has run. Read the diff, try the change, and merge it if it is right. Nothing merges on its own. After you merge, the scribe opens a docs-only PR if the change needs documenting.
+**4. Decide.** Open the PR. The reviewer's `VERDICT:` review, the gate's "Delivery gate: PASS" comment and the approver's `DECISION:` comment tell you what was checked. CI has run. Read the diff, try the change, and merge it if it is right. Nothing merges on its own unless you set `KIRO_APPROVER_MERGE: "true"` in the workflow. If the approver escalated, the PR carries `kiro-needs-owner` and its comment names the point it would not sign off on. After you merge, the scribe opens a docs-only PR if the change needs documenting.
 
 ## What happens behind the scenes
 
@@ -45,8 +45,10 @@ flowchart TB
     J3 --> R["reviewer<br/>fresh session, never reads the implementer<br/>tests + build, VERDICT review,<br/>applies kiro-ready or kiro-changes-requested"]
     R -->|kiro-changes-requested| J2
     R -->|kiro-ready| G["Actions job pr-gate<br/>kiro_gate.py (no model):<br/>SHA reviewed, CI green, scope, hash, rounds"]
+    G -->|PASS, same job| A["approver<br/>reads spec, review, gate, diff via gh<br/>DECISION comment, applies<br/>kiro-approved-to-merge or kiro-needs-owner"]
   end
-  G -->|kiro-ready-to-merge| M["You review and merge"]
+  A -->|kiro-approved-to-merge| M["You review and merge"]
+  A -.->|kiro-needs-owner| M
   G -.->|kiro-parked| M
   M -->|merged| S["scribe<br/>docs-only PR"]
 ```
@@ -74,7 +76,9 @@ Everything runs on your machine with your GitHub login, so the PR, the review an
 | `kiro-review` | PR | Waiting for the reviewer |
 | `kiro-changes-requested` | PR | Reviewer found problems; implementer fixes (at most 3 rounds) |
 | `kiro-ready` | PR | Reviewer approved; gate runs |
-| `kiro-ready-to-merge` | PR | Gate passed; you may merge |
+| `kiro-ready-to-merge` | PR | Gate passed; the approver is reading it (or, without an approver source, you may merge) |
+| `kiro-approved-to-merge` | PR | Approver signed off; you may merge (it already merged if `KIRO_APPROVER_MERGE` is on) |
+| `kiro-needs-owner` | PR | Approver escalated; its `DECISION:` comment says why |
 | `kiro-parked` | PR | Gate failed or round limit hit; you decide |
 
 ## Things to know

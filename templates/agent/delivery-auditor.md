@@ -2,6 +2,7 @@
 {
   "name": "delivery-auditor",
   "description": "Kiro Crew mate with one job: notice when the event-driven delivery lifecycle has stalled and tell the owner. It is the only mate that polls, because liveness is the one thing an event cannot report. It never implements, reviews, labels or dispatches.",
+  "model": "claude-sonnet-5.5",
   "tools": ["read", "shell", "tool_search"],
   "allowedTools": ["read", "shell", "tool_search"]
 }
@@ -17,7 +18,8 @@ The lifecycle is a label state machine on GitHub. Each label below should be rep
 | kiro-review | PR | delivery-reviewer | 20 minutes |
 | kiro-changes-requested | PR | delivery-implementer | 30 minutes |
 | kiro-ready | PR | the gate (GitHub Actions job pr-gate) | 5 minutes |
-| kiro-needs-owner, kiro-parked, kiro-ready-to-merge | issue / PR | the owner | not a stall; list only |
+| kiro-ready-to-merge | PR | delivery-approver | 10 minutes |
+| kiro-needs-owner, kiro-parked, kiro-approved-to-merge | issue / PR | the owner | not a stall; list only |
 
 Each patrol: `gh issue list --label <label> --state open --json number,updatedAt,title` and `gh pr list --label <label> --state open --json number,updatedAt,title,headRefName` for each label in the first five rows, and `gh run list --workflow kiro-crew-events.yml --limit 20 --json databaseId,conclusion,createdAt,displayTitle` for failed runs in the last hour. Read `updatedAt` as the moment the label was applied. For each stuck item, find the matching run (same issue or PR number in the title) and read its conclusion.
 

@@ -4,7 +4,7 @@ You are a coding agent that has opened this repository. This file tells you what
 
 ## What this is
 
-Kiro Crew Software Factory turns a GitHub issue into a reviewed, gate-checked pull request. Five small Kiro Crew agents on the user's own machine each do one job and hand off through GitHub labels. A human merges. Nothing here runs in the cloud; the user's machine hosts a Kiro Crew gateway and a GitHub Actions runner.
+Kiro Crew Software Factory turns a GitHub issue into a reviewed, gate-checked pull request. Six small Kiro Crew agents on the user's own machine each do one job and hand off through GitHub labels. A human merges unless the owner turns on `KIRO_APPROVER_MERGE` in the workflow. Nothing here runs in the cloud; the user's machine hosts a Kiro Crew gateway and a GitHub Actions runner.
 
 Read, in this order, before you act: `README.md`, `docs/01-quickstart-checklist.md`, `docs/05-kiro-crew-setup.md` section 5.5. Everything else is reference.
 
@@ -17,7 +17,7 @@ The person is running you on the machine that will host the factory, or on a lap
 | Read docs, run `--version` and `status` checks | do it | read-only |
 | `scripts/install-agent.sh` | **hand over** | `~/.kiro/agents` is read-only from an agent sandbox |
 | `scripts/setup-gateway.sh` | run `--check`, hand over the rest | it writes `~/.kiro/crew/config.json` (read-only for agents) and prints `sudo` lines |
-| Create 5 webhook sources in the dashboard | **hand over** | dashboard only; tokens are shown once, to the human |
+| Create 6 webhook sources in the dashboard | **hand over** | dashboard only; tokens are shown once, to the human |
 | `scripts/setup-github.sh OWNER/REPO` | **hand over** | the human pastes tokens; you must never see or print them |
 | `scripts/install-into-repo.sh PATH` | do it | copies files into their clone; they review and merge the PR |
 | `scripts/install-runner.sh OWNER/REPO` | **hand over** | downloads a binary that runs as the user; `SERVICE=1` needs `sudo` |
@@ -46,9 +46,9 @@ Work through this with the person. Stop at each hand-over and give them the comm
 
 2. **Hand over:** `scripts/install-agent.sh`, then `scripts/setup-gateway.sh`. Ask them to paste the output back. Explain any `->` line it printed: each is a `sudo ln`, `mv`, `dnf install` or `gh auth setup-git` that only they can run. Loop until it prints `Gateway ready`.
 
-3. **Hand over:** the five webhook sources. Point them at doc 01 step 4: Settings → Webhooks → New, one source per template (`delivery-planner`, `delivery-implementer`, `delivery-reviewer`, `delivery-scribe`, `github-worker`), signing required. Then `scripts/setup-github.sh OWNER/REPO` in their terminal, pasting each token and signing secret when prompted. Never ask them to paste a secret into the chat.
+3. **Hand over:** the six webhook sources. Point them at doc 01 step 4: Settings → Webhooks → New, one source per template (`delivery-planner`, `delivery-implementer`, `delivery-reviewer`, `delivery-approver`, `delivery-scribe`, `github-worker`), signing required. Then `scripts/setup-github.sh OWNER/REPO` in their terminal, pasting each token and signing secret when prompted. Never ask them to paste a secret into the chat.
 
-4. **Do:** `scripts/install-into-repo.sh /path/to/their/clone`. Then show them the printed commit commands. They open and merge that PR; the workflow only fires from the default branch. Before they merge, check two things in `.github/workflows/kiro-crew-events.yml`: the gateway port (`KIROCREW_WEBHOOK_URL` if not 5476) and `KIRO_GATE_REQUIRE_CI` (set `"false"` if the repo has no CI on pull requests).
+4. **Do:** `scripts/install-into-repo.sh /path/to/their/clone`. Then show them the printed commit commands. They open and merge that PR; the workflow only fires from the default branch. Before they merge, check three things in `.github/workflows/kiro-crew-events.yml`: the gateway port (`KIROCREW_WEBHOOK_URL` if not 5476), `KIRO_GATE_REQUIRE_CI` (set `"false"` if the repo has no CI on pull requests) and `KIRO_APPROVER_MERGE` (leave `"false"` unless the person explicitly wants the approver to merge).
 
 5. **Hand over:** `SERVICE=1 scripts/install-runner.sh OWNER/REPO` (laptop or EC2), or `scripts/install-runner.sh OWNER/REPO` then `nohup ./run.sh > runner.log 2>&1 &` in `~/actions-runner-kirocrew` (container). A runner started with plain `./run.sh` over SSH dies with the session.
 
@@ -69,7 +69,7 @@ Work through this with the person. Stop at each hand-over and give them the comm
 
 | Path | What |
 |---|---|
-| `templates/agent/` | the six agent templates (prompt, tools); installed to `~/.kiro/agents/` |
+| `templates/agent/` | the seven agent templates (prompt, tools, model); installed to `~/.kiro/agents/` |
 | `templates/agent.local/` | your overrides, git-ignored |
 | `templates/workflows/kiro-crew-events.yml` | one job per label, runs on the user's runner |
 | `templates/scripts/dispatch_kiro_event.py` | validates each event, signs and posts the webhook |

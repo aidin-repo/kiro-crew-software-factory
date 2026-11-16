@@ -58,6 +58,7 @@ STAGES = [
     ("review", "In review", "delivery-reviewer"),
     ("fixing", "Fixing", "delivery-implementer"),
     ("gate", "Gate", "pr-gate"),
+    ("approving", "Approving", "delivery-approver"),
     ("ready", "Ready to merge", None),
     ("parked", "Parked", None),
     ("shipped", "Shipped", "delivery-scribe"),
@@ -72,6 +73,7 @@ KIND_TO_AGENT = {
     "pr-changes": "delivery-implementer",
     "pr-review": "delivery-reviewer",
     "pr-review-round": "delivery-reviewer",
+    "pr-approve": "delivery-approver",
     "pr-merged": "delivery-scribe",
     "issue-task": "github-worker",
     "pr-gate": "pr-gate",
@@ -80,13 +82,14 @@ AGENTS = [
     ("delivery-planner", "Planner", "Writes the AIDLC spec comment"),
     ("delivery-implementer", "Implementer", "Builds inside the files block, opens the PR"),
     ("delivery-reviewer", "Reviewer", "Independent review, VERDICT comment"),
+    ("delivery-approver", "Approver", "Final DECISION after the gate"),
     ("delivery-scribe", "Scribe", "Docs PR after merge"),
     ("github-worker", "Worker", "Fast lane: kiro-task"),
 ]
 LIFECYCLE_LABELS = {
     "kiro-plan", "kiro-deliver", "kiro-approved", "kiro-needs-owner", "kiro-review",
-    "kiro-changes-requested", "kiro-ready", "kiro-ready-to-merge", "kiro-parked",
-    "kiro-task",
+    "kiro-changes-requested", "kiro-ready", "kiro-ready-to-merge", "kiro-approved-to-merge",
+    "kiro-parked", "kiro-task",
 }
 HOOK_RE = re.compile(r"^github:(?P<kind>[a-z-]+):(?P<owner>[^:]+):(?P<repo>[^:]+):(?P<run>\d+):(?P<attempt>\d+)$")
 BRANCH_RE = re.compile(r"^kiro/(?:issue|docs-pr)-(\d+)$")
@@ -670,8 +673,12 @@ class Factory:
                 return "shipped"
             if "kiro-parked" in pr_labels:
                 return "parked"
-            if "kiro-ready-to-merge" in pr_labels:
+            if "kiro-approved-to-merge" in pr_labels:
                 return "ready"
+            if "kiro-needs-owner" in pr_labels:
+                return "needs-owner"
+            if "kiro-ready-to-merge" in pr_labels:
+                return "approving"
             if "kiro-ready" in pr_labels:
                 return "gate"
             if "kiro-changes-requested" in pr_labels:
@@ -733,7 +740,7 @@ class Factory:
                     pend = [s for s in states if s in ("PENDING", "IN_PROGRESS", "QUEUED", None, "")]
                     checks = "failing" if bad else "pending" if pend else "passing"
             stage_since = None
-            if pr and stage in ("ready", "parked", "gate", "review", "fixing", "shipped"):
+            if pr and stage in ("ready", "parked", "gate", "approving", "needs-owner", "review", "fixing", "shipped"):
                 stage_since = _iso_to_ts(pr.get("mergedAt") if stage == "shipped" else pr.get("updatedAt"))
             else:
                 stage_since = _iso_to_ts(issue.get("updatedAt"))

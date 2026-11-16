@@ -48,7 +48,7 @@ fi
 
 echo "Repository configuration"
 LABELS="$(gh label list --repo "$REPO" --limit 200 --json name --jq '.[].name' 2>/dev/null || true)"
-for label in kiro-plan kiro-deliver kiro-approved kiro-needs-owner kiro-task kiro-review kiro-changes-requested kiro-ready kiro-ready-to-merge kiro-parked; do
+for label in kiro-plan kiro-deliver kiro-approved kiro-needs-owner kiro-task kiro-review kiro-changes-requested kiro-ready kiro-ready-to-merge kiro-approved-to-merge kiro-parked; do
   if grep -qx "$label" <<<"$LABELS"; then
     pass "label $label exists"
   else
@@ -122,7 +122,7 @@ if [[ -n "$CODE" && "$CODE" != "000" ]]; then
 else
   fail "nothing answers on 127.0.0.1:5476 (is the Kiro Crew gateway running?)"
 fi
-for template in delivery-planner.json delivery-implementer.json delivery-reviewer.json delivery-scribe.json delivery-auditor.md github-worker.json; do
+for template in delivery-planner.json delivery-implementer.json delivery-reviewer.json delivery-scribe.json delivery-approver.json delivery-auditor.md github-worker.json; do
   if [[ -f "$HOME/.kiro/agents/$template" ]]; then
     pass "agent template ~/.kiro/agents/$template present"
   else

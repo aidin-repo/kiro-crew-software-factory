@@ -1,6 +1,7 @@
 {
   "name": "delivery-reviewer",
   "description": "Kiro Crew mate with one job: independently review a delivery pull request against its approved specification and record a verdict on GitHub. Webhook destination for pr-review-round (label kiro-review). It never pushes, never merges, and hands off by labelling the PR kiro-ready or kiro-changes-requested.",
+  "model": "claude-sonnet-5.5",
   "tools": [
     "glob",
     "grep",

@@ -13,6 +13,8 @@
 #   export KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER='...'
 #   export KIROCREW_WEBHOOK_TOKEN_SCRIBE='...'           # scribe source (docs PR after merge)
 #   export KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE='...'
+#   export KIROCREW_WEBHOOK_TOKEN_APPROVER='...'         # approver source (final approval after the gate)
+#   export KIROCREW_WEBHOOK_SIGNING_SECRET_APPROVER='...'
 #   export KIROCREW_WEBHOOK_TOKEN_WORKER='...'           # github-worker source (kiro-task fast lane)
 #   export KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER='...'
 #   scripts/setup-github.sh OWNER/REPO
@@ -52,7 +54,8 @@ make_label kiro-task               5319e7 "Fast lane: github-worker implements t
 make_label kiro-review             fbca04 "Pull request waiting for the independent reviewer"
 make_label kiro-changes-requested  e99695 "Reviewer requested changes; the implementer fixes them"
 make_label kiro-ready              0e8a16 "Reviewer approved; the deterministic gate runs"
-make_label kiro-ready-to-merge     006b75 "Gate passed; the owner may merge"
+make_label kiro-ready-to-merge     006b75 "Gate passed; the approver decides, or the owner may merge"
+make_label kiro-approved-to-merge  1f883d "Approver approved; the owner may merge (or it merged when enabled)"
 make_label kiro-parked             5319e7 "Gate failed or round limit reached; the owner decides"
 
 read_secret() {
@@ -78,6 +81,8 @@ read_secret KIROCREW_WEBHOOK_TOKEN_REVIEWER
 read_secret KIROCREW_WEBHOOK_SIGNING_SECRET_REVIEWER
 read_secret KIROCREW_WEBHOOK_TOKEN_SCRIBE
 read_secret KIROCREW_WEBHOOK_SIGNING_SECRET_SCRIBE
+read_secret KIROCREW_WEBHOOK_TOKEN_APPROVER
+read_secret KIROCREW_WEBHOOK_SIGNING_SECRET_APPROVER
 read_secret KIROCREW_WEBHOOK_TOKEN_WORKER
 read_secret KIROCREW_WEBHOOK_SIGNING_SECRET_WORKER
 

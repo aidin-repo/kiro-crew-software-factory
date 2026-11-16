@@ -27,7 +27,7 @@ Where a step is dashboard-only, a screenshot shows what you should see. Everythi
 
   ![Settings list with Webhooks under System and the version at the bottom](images/01-settings-webhooks.png)
 
-## 2. Kiro Crew: install the six agent templates
+## 2. Kiro Crew: install the seven agent templates
 
 - [ ] In a terminal, from the clone:
 
@@ -35,7 +35,7 @@ Where a step is dashboard-only, a screenshot shows what you should see. Everythi
   scripts/install-agent.sh
   ```
 
-  It copies `templates/agent/*` into `~/.kiro/agents/` and prints the next steps. Expected: six `Installed ~/.kiro/agents/...` lines.
+  It copies `templates/agent/*` into `~/.kiro/agents/` and prints the next steps. Expected: seven `Installed ~/.kiro/agents/...` lines.
 
 ## 2b. Kiro Crew: prepare the gateway for unattended runs
 
@@ -53,7 +53,7 @@ Webhook runs have nobody to click Approve. Without this step the planner stops a
 
 ## 3. Kiro Crew: check the templates are visible (mates are optional)
 
-- [ ] Open the mate picker at the top of any chat, or the **Mates** page. The six templates you installed appear in the roster.
+- [ ] Open the mate picker at the top of any chat, or the **Mates** page. The seven templates you installed appear in the roster.
 
   ![The mate picker at the top of a chat, each entry with its template name underneath](images/03-mates-picker.png)
 
@@ -74,8 +74,9 @@ Repeat for each row. Have a terminal open beside the dashboard: each source show
 | 4a | `GitHub REPO planner` | `delivery-planner` | `gh secret set KIROCREW_WEBHOOK_TOKEN --repo OWNER/REPO` then `gh secret set KIROCREW_WEBHOOK_SIGNING_SECRET --repo OWNER/REPO` |
 | 4b | `GitHub REPO implementer` | `delivery-implementer` | `..._TOKEN_IMPLEMENTER`, `..._SIGNING_SECRET_IMPLEMENTER` |
 | 4c | `GitHub REPO reviewer` | `delivery-reviewer` | `..._TOKEN_REVIEWER`, `..._SIGNING_SECRET_REVIEWER` |
-| 4d | `GitHub REPO scribe` | `delivery-scribe` | `..._TOKEN_SCRIBE`, `..._SIGNING_SECRET_SCRIBE` |
-| 4e | `GitHub REPO worker` | `github-worker` | `..._TOKEN_WORKER`, `..._SIGNING_SECRET_WORKER` |
+| 4d | `GitHub REPO approver` | `delivery-approver` | `..._TOKEN_APPROVER`, `..._SIGNING_SECRET_APPROVER` |
+| 4e | `GitHub REPO scribe` | `delivery-scribe` | `..._TOKEN_SCRIBE`, `..._SIGNING_SECRET_SCRIBE` |
+| 4f | `GitHub REPO worker` | `github-worker` | `..._TOKEN_WORKER`, `..._SIGNING_SECRET_WORKER` |
 
 For each:
 
@@ -89,15 +90,15 @@ For each:
 
 - [ ] Check the new row in the left list reads `Agent: <template>` (for example `Agent: delivery-implementer`). **Routing** → **Agent** changes it later without changing the token.
 
-- [ ] After all five:
+- [ ] After all six:
 
   ```bash
   gh secret list --repo OWNER/REPO
   ```
 
-  Ten `KIROCREW_*` names. If you skipped scribe or worker, those hops will 401 and nothing else is affected.
+  Twelve `KIROCREW_*` names. If you skipped approver, scribe or worker, those hops will 401 and nothing else is affected; without the approver pair a PR stops at `kiro-ready-to-merge`, which is still the owner's cue to merge.
 
-Alternative for the secrets: export all ten as environment variables and let `scripts/setup-github.sh OWNER/REPO` store them in step 5.
+Alternative for the secrets: export all twelve as environment variables and let `scripts/setup-github.sh OWNER/REPO` store them in step 5.
 
 ## 5. GitHub: labels, secrets, workflow
 

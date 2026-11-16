@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # End-to-end smoke test of the delivery lifecycle: creates a small issue, applies
 # kiro-deliver as the repository owner, then follows the labels through planner,
-# implementer, reviewer and gate until the PR reads kiro-ready-to-merge.
+# implementer, reviewer, gate and approver until the PR reads kiro-approved-to-merge
+# (or kiro-ready-to-merge when the approver step is not installed).
 #
 # Usage: scripts/smoke-test.sh OWNER/REPO
-# Env:   MODE=deliver  (default) full lifecycle; expects kiro-ready-to-merge
+# Env:   MODE=deliver  (default) full lifecycle; expects kiro-approved-to-merge
+#        APPROVER_WAIT_SECS  after kiro-ready-to-merge, how long to wait for the approver
+#                            before accepting the gate's label as the end (default 600)
 #        MODE=task     fast lane only: kiro-task, wait for a PR touching one file
 #        TIMEOUT_SECS  how long to wait overall (default 1200)
 #        CLEANUP=1     close the PR (deleting its branch) and the issue afterwards
@@ -13,6 +16,7 @@ set -euo pipefail
 REPO="${1:-}"
 MODE="${MODE:-deliver}"
 TIMEOUT_SECS="${TIMEOUT_SECS:-1200}"
+APPROVER_WAIT_SECS="${APPROVER_WAIT_SECS:-600}"
 if [[ -z "$REPO" || "$REPO" != */* ]]; then
   echo "Usage: $0 OWNER/REPO" >&2
   exit 2
@@ -78,6 +82,7 @@ pr_labels()    { gh pr view "$PR_URL" --json labels --jq '[.labels[].name] | joi
 find_pr()      { gh pr list --repo "$REPO" --head "kiro/issue-$NUMBER" --state all --json url --jq '.[0].url // empty' 2>/dev/null || true; }
 
 SEEN=""
+READY_AT=""
 mark() { if [[ "$SEEN" != *"|$1|"* ]]; then SEEN="$SEEN|$1|"; echo "$(date +%H:%M:%S)  $1"; fi; }
 
 RESULT=1
@@ -96,7 +101,16 @@ while [[ "$(date +%s)" -lt "$DEADLINE" ]]; do
     [[ "$PL" == *kiro-changes-requested* ]] && mark "STAGE  kiro-changes-requested (another round)"
     [[ "$PL" == *kiro-ready* && "$PL" != *kiro-ready-to-merge* ]] && mark "STAGE  kiro-ready (gate running)"
     [[ "$PL" == *kiro-parked* ]] && { mark "PARKED gate parked the PR; read its comment"; break; }
-    [[ "$PL" == *kiro-ready-to-merge* ]] && { mark "STAGE  kiro-ready-to-merge"; RESULT=0; break; }
+    if [[ "$PL" == *kiro-ready-to-merge* ]]; then
+      mark "STAGE  kiro-ready-to-merge (gate passed; waiting for the approver)"
+      [[ -z "$READY_AT" ]] && READY_AT="$(date +%s)"
+      if (( $(date +%s) - READY_AT > APPROVER_WAIT_SECS )); then
+        mark "NOTE   no approver decision within ${APPROVER_WAIT_SECS}s; accepting the gate's label (approver step not installed?)"
+        RESULT=0; break
+      fi
+    fi
+    [[ "$PL" == *kiro-needs-owner* ]] && { mark "ESCALATED approver sent it to the owner; read its DECISION comment"; RESULT=0; break; }
+    [[ "$PL" == *kiro-approved-to-merge* ]] && { mark "STAGE  kiro-approved-to-merge"; RESULT=0; break; }
   fi
   sleep 15
 done
