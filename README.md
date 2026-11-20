@@ -38,21 +38,9 @@ In testing, a labelled issue became a `kiro-ready-to-merge` pull request in 4 to
 
 ## How it works
 
-```mermaid
-flowchart LR
-    I["Issue + kiro-deliver"] -->|webhook| P["planner<br/>spec comment"]
-    P -->|kiro-approved| IMP["implementer<br/>worktree, PR"]
-    P -.->|kiro-needs-owner| H["You read the spec,<br/>apply kiro-approved"]
-    H --> IMP
-    IMP -->|PR kiro-review| R["reviewer<br/>VERDICT review"]
-    R -->|kiro-changes-requested| IMP
-    R -->|kiro-ready| G["gate script<br/>no model"]
-    G -->|kiro-ready-to-merge| A["approver<br/>DECISION comment"]
-    G -.->|kiro-parked| M["You merge"]
-    A -->|kiro-approved-to-merge| M
-    A -.->|kiro-needs-owner| M
-    M -->|merged| S["scribe<br/>docs PR"]
-```
+![Kiro Crew Software Factory: a GitHub label starts a self-hosted Actions job, which signs a webhook to the local Kiro Crew gateway; planner, implementer, reviewer, gate, approver and scribe hand off through labels, and you merge](docs/images/architecture.png)
+
+The diagram source is [`docs/images/architecture.drawio`](docs/images/architecture.drawio) (open it in draw.io or diagrams.net); `python3 docs/images/build_architecture_drawio.py` regenerates it.
 
 Everything runs on your machine. A self-hosted Actions runner turns each label event into a signed webhook to the local Kiro Crew gateway; the gateway runs the agent for that label; its shell, git and tests execute on your disk. GitHub only stores issues, labels, branches and PRs and fires the events. Only the repository owner's labels start work, and nothing merges on its own. [Doc 03](docs/03-delivery-lifecycle.md) is the full picture; [Doc 02](docs/02-how-it-works.md) walks the fast lane step by step.
 
